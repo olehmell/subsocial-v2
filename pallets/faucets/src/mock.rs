@@ -166,14 +166,14 @@ pub(crate) const ACCOUNT1: AccountId = 11;
 
 pub(crate) const INITIAL_BLOCK_NUMBER: BlockNumber = 20;
 
-pub(crate) const fn default_faucet() -> Faucet<Test> {
+pub(crate) fn default_faucet() -> Faucet<Test> {
     Faucet {
         enabled: true,
         period: 100,
         period_limit: 50,
         drip_limit: 25,
 
-        next_period_at: 0,
+        next_period_at: System::block_number(),
         dripped_in_current_period: 0,
     }
 }

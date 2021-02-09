@@ -50,6 +50,15 @@ fn add_faucet_should_fail_when_no_free_balance_on_account() {
     });
 }
 
+#[test]
+fn add_faucet_should_fail_when_drip_limit_exceeds_period_limit() {
+    ExtBuilder::build().execute_with(|| {
+        let mut settings = default_faucet();
+        settings.drip_limit = settings.period_limit + 1;
+        assert_noop!(_add_faucet(None, None, Some(settings)), Error::<Test>::DripLimitExceedsPeriodLimit);
+    });
+}
+
 // Update faucet
 // ----------------------------------------------------------------------------
 

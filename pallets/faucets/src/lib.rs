@@ -111,6 +111,7 @@ decl_error! {
         
         PeriodLimitReached,
         DripLimitReached,
+        DripLimitExceedsPeriodLimit,
     }
 }
 
@@ -131,11 +132,12 @@ decl_module! {
             drip_limit: BalanceOf<T>,
         ) -> DispatchResult {
 
-            ensure_root(origin.clone())?;
+            ensure_root(origin)?;
 
             Self::ensure_period_not_zero(period)?;
             Self::ensure_period_limit_not_zero(period_limit)?;
             Self::ensure_drip_limit_not_zero(drip_limit)?;
+            ensure!(drip_limit <= period_limit, Error::<T>::DripLimitExceedsPeriodLimit);
 
             ensure!(
                 Self::faucet_by_account(&faucet).is_none(),
@@ -245,7 +247,7 @@ decl_module! {
             50_000 + T::DbWeight::get().reads_writes(2, 2),
             
             // TODO Replace with Ok(Pays::No.into())
-            // See https://github.com/substrate-developer-hub/substrate-node-template/commit/6546b15634bf088e8faee806b5cf266621412889#diff-657cb55f3d39058f730b46f7c84f90698ad43b3ab5c1aa8789a435a230c77f19R106
+            //  - See https://github.com/substrate-developer-hub/substrate-node-template/commit/6546b15634bf088e8faee806b5cf266621412889#diff-657cb55f3d39058f730b46f7c84f90698ad43b3ab5c1aa8789a435a230c77f19R106
             Pays::No
         )]
         pub fn drip(
@@ -333,7 +335,7 @@ impl<T: Trait> Faucet<T> {
             period_limit,
             drip_limit,
 
-            next_period_at: Zero::zero(),
+            next_period_at: system::Module::<T>::block_number(),
             dripped_in_current_period: Zero::zero(),
         }
     }
