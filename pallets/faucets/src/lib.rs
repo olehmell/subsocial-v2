@@ -108,10 +108,12 @@ decl_error! {
         ZeroPeriodLimitProvided,
         ZeroDripLimitProvided,
         ZeroDripAmountProvided,
+
+        DripLimitExceedsPeriodLimit,
+        NewPeriodLimitBelowDripLimit,
         
         PeriodLimitReached,
         DripLimitReached,
-        DripLimitExceedsPeriodLimit,
     }
 }
 
@@ -203,6 +205,8 @@ decl_module! {
                 Self::ensure_period_limit_not_zero(period_limit)?;
 
                 if period_limit != settings.period_limit {
+                    ensure!(settings.drip_limit <= period_limit, Error::<T>::NewPeriodLimitBelowDripLimit);
+
                     settings.period_limit = period_limit;
                     should_update = true;
                 }
@@ -212,6 +216,8 @@ decl_module! {
                 Self::ensure_drip_limit_not_zero(drip_limit)?;
 
                 if drip_limit != settings.drip_limit {
+                    ensure!(drip_limit <= settings.period_limit, Error::<T>::DripLimitExceedsPeriodLimit);
+
                     settings.drip_limit = drip_limit;
                     should_update = true;
                 }

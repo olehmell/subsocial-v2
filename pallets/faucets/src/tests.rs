@@ -176,6 +176,40 @@ fn update_faucet_should_fail_when_same_drip_limit_provided() {
     });
 }
 
+#[test]
+fn update_faucet_should_fail_when_new_period_limit_below_drip_limit() {
+    ExtBuilder::build_with_faucet().execute_with(|| {
+        assert_noop!(
+            _update_faucet_settings(
+                FaucetUpdate {
+                    enabled: None,
+                    period: None,
+                    period_limit: Some(default_faucet().drip_limit - 1),
+                    drip_limit: None
+                }
+            ),
+            Error::<Test>::NewPeriodLimitBelowDripLimit
+        );
+    });
+}
+
+#[test]
+fn update_faucet_should_fail_when_new_drip_limit_exceeds_period_limit() {
+    ExtBuilder::build_with_faucet().execute_with(|| {
+        assert_noop!(
+            _update_faucet_settings(
+                FaucetUpdate {
+                    enabled: None,
+                    period: None,
+                    period_limit: Some(default_faucet().drip_limit),
+                    drip_limit: Some(default_faucet().drip_limit + 1)
+                }
+            ),
+            Error::<Test>::DripLimitExceedsPeriodLimit
+        );
+    });
+}
+
 // Remove faucets
 // ----------------------------------------------------------------------------
 
