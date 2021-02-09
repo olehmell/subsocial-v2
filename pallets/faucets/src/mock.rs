@@ -64,16 +64,6 @@ impl system::Trait for Test {
 }
 
 parameter_types! {
-    pub const MinimumPeriod: u64 = 5;
-}
-
-impl pallet_timestamp::Trait for Test {
-    type Moment = u64;
-    type OnTimestampSet = ();
-    type MinimumPeriod = MinimumPeriod;
-}
-
-parameter_types! {
     pub const ExistentialDeposit: u64 = 1;
 }
 
@@ -83,18 +73,6 @@ impl pallet_balances::Trait for Test {
     type Event = ();
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
-}
-
-parameter_types! {
-    pub const MinHandleLen: u32 = 5;
-    pub const MaxHandleLen: u32 = 50;
-}
-
-impl pallet_utils::Trait for Test {
-    type Event = ();
-    type Currency = Balances;
-    type MinHandleLen = MinHandleLen;
-    type MaxHandleLen = MaxHandleLen;
 }
 
 impl Trait for Test {
