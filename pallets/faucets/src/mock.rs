@@ -188,14 +188,15 @@ pub(crate) const fn default_faucet_update() -> FaucetUpdate<BlockNumber, Balance
 }
 
 pub(crate) fn _add_default_faucet() -> DispatchResult {
-    _add_faucet(None, None)
+    _add_faucet(None, None, None)
 }
 
 pub(crate) fn _add_faucet(
     origin: Option<Origin>,
     faucet_account: Option<AccountId>,
+    settings_opt: Option<Faucet<Test>>,
 ) -> DispatchResult {
-    let settings =  default_faucet();
+    let settings = settings_opt.unwrap_or_else(default_faucet);
     Faucets::add_faucet(
         origin.unwrap_or_else(Origin::root),
         faucet_account.unwrap_or(FAUCET1),

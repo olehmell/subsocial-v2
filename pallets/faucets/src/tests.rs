@@ -20,7 +20,7 @@ fn add_faucet_should_fail_when_origin_is_not_root() {
     ExtBuilder::build().execute_with(|| {
         let not_root = Origin::signed(ACCOUNT1);
         assert_noop!(
-            _add_faucet(Some(not_root), None),
+            _add_faucet(Some(not_root), None, None),
             BadOrigin
         );
     });
@@ -44,7 +44,7 @@ fn add_faucet_should_fail_when_no_free_balance_on_account() {
         assert_ok!(_add_default_faucet());
 
         assert_noop!(
-            _add_faucet(None, Some(FAUCET9)),
+            _add_faucet(None, Some(FAUCET9), None),
             Error::<Test>::NoFreeBalanceOnFaucet
         );
     });
@@ -176,7 +176,7 @@ fn remove_faucets_should_work() {
         // This will add faucets with accounts ids [1; 8]
         let mut faucets = Vec::new();
         for account in FAUCET1..=FAUCET8 {
-            assert_ok!(_add_faucet(None, Some(account)));
+            assert_ok!(_add_faucet(None, Some(account), None));
             faucets.push(account);
         }
 
@@ -202,7 +202,7 @@ fn remove_faucets_should_handle_duplicate_addresses() {
         // This will add faucets with accounts ids [1; 8]
         let mut faucets = Vec::new();
         for account in FAUCET1..=FAUCET8 {
-            assert_ok!(_add_faucet(None, Some(account)));
+            assert_ok!(_add_faucet(None, Some(account), None));
             faucets.push(account);
         }
 
