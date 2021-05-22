@@ -12,9 +12,9 @@ use sp_runtime::{
 use frame_system as system;
 use sp_io::TestExternalities;
 
-use pallet_utils::{Content, SpaceId};
+use pallet_utils::{Content, SpaceId, PostId};
 use pallet_spaces::{RESERVED_SPACE_COUNT, SpaceById};
-use pallet_posts::{PostId, PostExtension};
+use pallet_posts::PostExtension;
 
 pub use pallet_utils::mock_functions::valid_content_ipfs;
 

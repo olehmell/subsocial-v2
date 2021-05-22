@@ -19,6 +19,7 @@ use pallet_permissions::{Module as Permissions, SpacePermission, SpacePermission
 use pallet_utils::{Module as Utils, Error as UtilsError, SpaceId, User, WhoAndWhen, Content};
 
 pub mod functions;
+pub mod rpc;
 
 #[cfg(test)]
 mod mock;
@@ -32,7 +33,10 @@ type RoleId = u64;
 pub struct Role<T: Trait> {
     pub created: WhoAndWhen<T>,
     pub updated: Option<WhoAndWhen<T>>,
+
+    /// Unique sequential identifier of a role. Examples of role ids: `1`, `2`, `3`, and so on.
     pub id: RoleId,
+
     pub space_id: SpaceId,
     pub disabled: bool,
     pub expires_at: Option<T::BlockNumber>,
@@ -101,12 +105,14 @@ decl_error! {
     }
 }
 
+pub const FIRST_ROLE_ID: u64 = 1;
+
 // This pallet's storage items.
 decl_storage! {
     trait Store for Module<T: Trait> as PermissionsModule {
 
         /// The next role id.
-        pub NextRoleId get(fn next_role_id): RoleId = 1;
+        pub NextRoleId get(fn next_role_id): RoleId = FIRST_ROLE_ID;
 
         /// Get role details by its id.
         pub RoleById get(fn role_by_id):

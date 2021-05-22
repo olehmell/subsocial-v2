@@ -18,10 +18,10 @@ use frame_support::traits::Currency;
 pub use pallet_transaction_payment::{Multiplier, TargetedFeeAdjustment};
 
 // TODO: replace with imported constants from Runtime
-pub const SMNS: Balance = 1_000_000_000_000;
-pub const DOLLARS: Balance = SMNS;             // 1_000_000_000_000
-pub const CENTS: Balance = DOLLARS / 100;      // 10_000_000_000
-pub const MILLICENTS: Balance = CENTS / 1_000; // 10_000_000
+pub const UNITS: Balance = 100_000_000_000;
+pub const DOLLARS: Balance = UNITS;            // 100_000_000_000
+pub const CENTS: Balance = DOLLARS / 100;      // 1_000_000_000
+pub const MILLICENTS: Balance = CENTS / 1_000; // 1_000_000
 
 impl_outer_origin! {
 	pub enum Origin for Test {}
@@ -73,7 +73,7 @@ impl system::Trait for Test {
     type SystemWeightInfo = ();
 }
 
-pub(crate) const EXISTENTIAL_DEPOSIT: Balance = 1 * CENTS;
+pub(crate) const EXISTENTIAL_DEPOSIT: Balance = 10 * CENTS;
 parameter_types! {
     pub const ExistentialDeposit: u64 = EXISTENTIAL_DEPOSIT;
 }
@@ -128,7 +128,7 @@ impl pallet_profiles::Trait for Test {
 
 // TODO export to a common place
 parameter_types! {
-	pub const TransactionByteFee: Balance = 1 * MILLICENTS;
+	pub const TransactionByteFee: Balance = 10 * MILLICENTS;
 	pub const TargetBlockFullness: Perquintill = Perquintill::from_percent(25);
 	pub AdjustmentVariable: Multiplier = Multiplier::saturating_from_rational(1, 100_000);
 	pub MinimumMultiplier: Multiplier = Multiplier::saturating_from_rational(1, 1_000_000_000u128);
