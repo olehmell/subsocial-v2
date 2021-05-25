@@ -4,8 +4,10 @@ use serde::{Deserialize, Serialize};
 use jsonrpc_core::{Error as RpcError, ErrorCode};
 
 use codec::{Decode, Encode};
-use sp_runtime::SaturatedConversion;
+use sp_runtime::{SaturatedConversion, AccountId32};
 use sp_std::prelude::*;
+#[cfg(feature = "std")]
+use sp_core::crypto::{Ss58Codec, Ss58AddressFormat};
 
 use crate::{Content, bool_to_option, Trait, WhoAndWhen};
 
@@ -13,6 +15,7 @@ use crate::{Content, bool_to_option, Trait, WhoAndWhen};
 #[cfg_attr(feature = "std", derive(Debug, Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct FlatWhoAndWhen<AccountId, BlockNumber> {
+    // #[cfg_attr(feature = "std", serde(serialize_with = "account_to_subsocial_account"))]
     pub created_by: AccountId,
     pub created_at_block: BlockNumber,
     pub created_at_time: u64,
@@ -111,4 +114,19 @@ pub fn map_rpc_error(err: impl std::fmt::Debug) -> RpcError {
         message: "An RPC error occurred".into(),
         data: Some(format!("{:?}", err).into()),
     }
+}
+
+#[cfg(feature = "std")]
+pub fn u64_to_string<S>(field: &u64, serializer: S) -> Result<S::Ok, S::Error> where S: serde::Serializer {
+    serializer.serialize_str(field.to_string().as_str())
+}
+
+#[cfg(feature = "std")]
+pub fn u64_opt_to_string<S>(field: &Option<u64>, serializer: S) -> Result<S::Ok, S::Error> where S: serde::Serializer {
+    serializer.serialize_str(field.unwrap_or_default().to_string().as_str())
+}
+
+#[cfg(feature = "std")]
+pub fn account_to_subsocial_account<S, T>(field: &T::AccountId32, serializer: S) -> Result<S::Ok, S::Error> where S: serde::Serializer {
+    serializer.serialize_str(field.to_ss58check_with_version(Ss58AddressFormat::SubsocialAccount).as_str())
 }

@@ -5,6 +5,8 @@ use sp_runtime::traits::Zero;
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::prelude::*;
 
+#[cfg(feature = "std")]
+use pallet_utils::rpc::u64_to_string;
 use pallet_utils::{PostId, rpc::FlatWhoAndWhen};
 
 use crate::{Module, Reaction, ReactionId, ReactionKind, Trait};
@@ -13,6 +15,7 @@ use crate::{Module, Reaction, ReactionId, ReactionKind, Trait};
 #[cfg_attr(feature = "std", derive(Debug, Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct FlatReaction<AccountId, BlockNumber> {
+    #[cfg_attr(feature = "std", serde(serialize_with = "u64_to_string"))]
     pub id: ReactionId,
     #[cfg_attr(feature = "std", serde(flatten))]
     pub who_and_when: FlatWhoAndWhen<AccountId, BlockNumber>,

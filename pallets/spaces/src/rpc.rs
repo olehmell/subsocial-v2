@@ -3,6 +3,8 @@ use codec::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 use sp_std::prelude::*;
 
+#[cfg(feature = "std")]
+use pallet_utils::rpc::u64_to_string;
 use pallet_utils::{bool_to_option, SpaceId, rpc::{FlatContent, FlatWhoAndWhen, ShouldSkip}};
 
 use crate::{Module, Space, Trait, FIRST_SPACE_ID};
@@ -11,6 +13,7 @@ use crate::{Module, Space, Trait, FIRST_SPACE_ID};
 #[cfg_attr(feature = "std", derive(Debug, Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct FlatSpace<AccountId, BlockNumber> {
+    #[cfg_attr(feature = "std", serde(serialize_with = "u64_to_string"))]
     pub id: SpaceId,
 
     #[cfg_attr(feature = "std", serde(flatten))]

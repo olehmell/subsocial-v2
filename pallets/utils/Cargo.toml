@@ -16,6 +16,7 @@ std = [
     'serde',
     'codec/std',
     'sp-runtime/std',
+    'sp-core/std',
     'frame-support/std',
     'frame-system/std',
     'sp-std/std',
@@ -39,8 +40,8 @@ frame-system = { default-features = false, version = '2.0.1' }
 pallet-timestamp = { default-features = false, version = '2.0.1' }
 sp-runtime = { default-features = false, version = '2.0.1' }
 sp-std = { default-features = false, version = '2.0.1' }
+sp-core = { default-features = false, version = '2.0.1' }
 
 [dev-dependencies]
 pallet-balances = { default-features = false, version = '2.0.1' }
-sp-core = { default-features = false, version = '2.0.1' }
 sp-io = { default-features = false, version = '2.0.1' }

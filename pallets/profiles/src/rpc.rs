@@ -3,8 +3,7 @@ use codec::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 use sp_std::prelude::*;
 
-use pallet_utils::rpc::{FlatContent, FlatWhoAndWhen};
-
+use pallet_utils::{bool_to_option, rpc::{FlatContent, FlatWhoAndWhen, ShouldSkip}};
 use frame_system::Module as SystemModule;
 
 use crate::{Module, Profile, SocialAccount, Trait};
@@ -28,7 +27,10 @@ pub struct FlatSocialAccount<AccountId, BlockNumber> {
     pub following_accounts_count: u16,
     pub following_spaces_count: u16,
     pub reputation: u32,
+    #[cfg_attr(feature = "std", serde(skip_serializing_if = "ShouldSkip::should_skip", flatten))]
     pub profile: Option<FlatProfile<AccountId, BlockNumber>>,
+    #[cfg_attr(feature = "std", serde(skip_serializing_if = "ShouldSkip::should_skip"))]
+    pub has_profile: Option<bool>,
 }
 
 impl<T: Trait> From<Profile<T>> for FlatProfile<T::AccountId, T::BlockNumber> {
@@ -48,6 +50,7 @@ impl<T: Trait> From<SocialAccount<T>> for FlatSocialAccount<T::AccountId, T::Blo
             followers_count, following_accounts_count, following_spaces_count, reputation, profile
         } = from;
 
+        let has_profile = bool_to_option(profile.is_some());
         Self {
             id: T::AccountId::default(),
             followers_count,
@@ -55,6 +58,7 @@ impl<T: Trait> From<SocialAccount<T>> for FlatSocialAccount<T::AccountId, T::Blo
             following_spaces_count,
             reputation,
             profile: profile.map(|profile| profile.into()),
+            has_profile
         }
     }
 }

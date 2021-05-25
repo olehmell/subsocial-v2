@@ -6,9 +6,13 @@ use sp_std::{vec, prelude::*};
 
 use pallet_space_follows::Module as SpaceFollows;
 use pallet_spaces::Module as Spaces;
+
+#[cfg(feature = "std")]
+use pallet_utils::rpc::{u64_to_string, u64_opt_to_string, account_to_subsocial_account};
 use pallet_utils::{bool_to_option, PostId, rpc::{FlatContent, FlatWhoAndWhen, ShouldSkip}, SpaceId};
 
 use crate::{Module, Post, PostExtension, FIRST_POST_ID, Trait};
+
 pub type RepliesByPostId<AccountId, BlockNumber> = BTreeMap<PostId, Vec<FlatPost<AccountId, BlockNumber>>>;
 
 #[derive(Eq, PartialEq, Encode, Decode, Default)]
@@ -57,14 +61,15 @@ impl From<PostExtension> for FlatPostExtension {
 #[cfg_attr(feature = "std", derive(Debug, Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 pub struct FlatPost<AccountId, BlockNumber> {
+    #[cfg_attr(feature = "std", serde(serialize_with = "u64_to_string"))]
     pub id: PostId,
 
     #[cfg_attr(feature = "std", serde(flatten))]
     pub who_and_when: FlatWhoAndWhen<AccountId, BlockNumber>,
 
-    pub owner: AccountId,
+    pub owner_id: AccountId,
 
-    #[cfg_attr(feature = "std", serde(skip_serializing_if = "ShouldSkip::should_skip"))]
+    #[cfg_attr(feature = "std", serde(skip_serializing_if = "ShouldSkip::should_skip", serialize_with = "u64_opt_to_string"))]
     pub space_id: Option<SpaceId>,
 
     #[cfg_attr(feature = "std", serde(flatten))]
@@ -116,7 +121,7 @@ impl<T: Trait> From<Post<T>> for FlatPost<T::AccountId, T::BlockNumber> {
         Self {
             id,
             who_and_when: (created, updated).into(),
-            owner,
+            owner_id: owner,
             space_id,
             content: content.into(),
             is_hidden: bool_to_option(hidden),
