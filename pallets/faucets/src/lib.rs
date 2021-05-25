@@ -6,6 +6,9 @@
 //! Currently, only sudo account can add, update and remove faucets.
 //! But this can be changed in the future to allow anyone else
 //! to set up new faucets for their needs.
+//!
+//! This would allow each space to create its own faucet(s) and distribute its tokens to its 
+//! members based on a set of conditions the space decides suits the needs of its community.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -238,7 +241,7 @@ decl_module! {
 
             ensure_root(origin)?;
 
-            ensure!(faucets.len() != Zero::zero(), Error::<T>::NoFaucetsProvided);
+            ensure!(!faucets.len().is_zero(), Error::<T>::NoFaucetsProvided);
 
             let unique_faucets = BTreeSet::from_iter(faucets.iter());
             for faucet in unique_faucets.iter() {

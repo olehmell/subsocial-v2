@@ -57,10 +57,22 @@ impl system::Trait for Test {
     type MaximumBlockLength = MaximumBlockLength;
     type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
-    type ModuleToIndex = ();
+    type PalletInfo = ();
     type AccountData = pallet_balances::AccountData<u64>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
+    type SystemWeightInfo = ();
+}
+
+parameter_types! {
+    pub const MinimumPeriod: u64 = 5;
+}
+
+impl pallet_timestamp::Trait for Test {
+    type Moment = u64;
+    type OnTimestampSet = ();
+    type MinimumPeriod = MinimumPeriod;
+    type WeightInfo = ();
 }
 
 parameter_types! {
@@ -73,6 +85,8 @@ impl pallet_balances::Trait for Test {
     type Event = ();
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
+    type WeightInfo = ();
+    type MaxLocks = ();
 }
 
 impl Trait for Test {

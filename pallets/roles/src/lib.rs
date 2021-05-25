@@ -19,6 +19,7 @@ use pallet_permissions::{Module as Permissions, SpacePermission, SpacePermission
 use pallet_utils::{Module as Utils, Error as UtilsError, SpaceId, User, WhoAndWhen, Content};
 
 pub mod functions;
+pub mod rpc;
 
 #[cfg(test)]
 mod mock;
@@ -32,7 +33,10 @@ type RoleId = u64;
 pub struct Role<T: Trait> {
     pub created: WhoAndWhen<T>,
     pub updated: Option<WhoAndWhen<T>>,
+
+    /// Unique sequential identifier of a role. Examples of role ids: `1`, `2`, `3`, and so on.
     pub id: RoleId,
+
     pub space_id: SpaceId,
     pub disabled: bool,
     pub expires_at: Option<T::BlockNumber>,
@@ -61,7 +65,7 @@ pub trait Trait: system::Trait
 
     type SpaceFollows: SpaceFollowsProvider<AccountId=Self::AccountId>;
 
-    type IsAccountBlocked: IsAccountBlocked<AccountId=Self::AccountId>;
+    type IsAccountBlocked: IsAccountBlocked<Self::AccountId>;
 
     type IsContentBlocked: IsContentBlocked;
 }
@@ -101,12 +105,14 @@ decl_error! {
     }
 }
 
+pub const FIRST_ROLE_ID: u64 = 1;
+
 // This pallet's storage items.
 decl_storage! {
     trait Store for Module<T: Trait> as PermissionsModule {
 
         /// The next role id.
-        pub NextRoleId get(fn next_role_id): RoleId = 1;
+        pub NextRoleId get(fn next_role_id): RoleId = FIRST_ROLE_ID;
 
         /// Get role details by its id.
         pub RoleById get(fn role_by_id):
@@ -121,8 +127,10 @@ decl_storage! {
             map hasher(twox_64_concat) SpaceId => Vec<RoleId>;
 
         /// A list of all role ids granted to this user (account or space) within this space.
-        pub RoleIdsByUserInSpace get(fn role_ids_by_user_in_space):
-            map hasher(blake2_128_concat) (User<T::AccountId>, SpaceId) => Vec<RoleId>;
+        pub RoleIdsByUserInSpace get(fn role_ids_by_user_in_space): double_map
+            hasher(blake2_128_concat) User<T::AccountId>,
+            hasher(twox_64_concat) SpaceId
+            => Vec<RoleId>;
     }
 }
 
@@ -155,11 +163,10 @@ decl_module! {
       ensure!(!permissions.is_empty(), Error::<T>::NoPermissionsProvided);
 
       Utils::<T>::is_valid_content(content.clone())?;
-      ensure!(!T::IsAccountBlocked::is_account_blocked(who.clone(), space_id), UtilsError::<T>::AccountIsBlocked);
+      ensure!(T::IsContentBlocked::is_allowed_content(content.clone(), space_id), UtilsError::<T>::ContentIsBlocked);
+
       Self::ensure_role_manager(who.clone(), space_id)?;
-
-      ensure!(!T::IsContentBlocked::is_content_blocked(content.clone(), space_id), UtilsError::<T>::ContentIsBlocked);
-
+      
       let permissions_set = BTreeSet::from_iter(permissions.into_iter());
       let new_role = Role::<T>::new(who.clone(), space_id, time_to_live, content, permissions_set)?;
 
@@ -189,7 +196,6 @@ decl_module! {
 
       let mut role = Self::require_role(role_id)?;
 
-      ensure!(!T::IsAccountBlocked::is_account_blocked(who.clone(), role.space_id), UtilsError::<T>::AccountIsBlocked);
       Self::ensure_role_manager(who.clone(), role.space_id)?;
 
       let mut is_update_applied = false;
@@ -204,7 +210,7 @@ decl_module! {
       if let Some(content) = update.content {
         if content != role.content {
           Utils::<T>::is_valid_content(content.clone())?;
-          ensure!(!T::IsContentBlocked::is_content_blocked(content.clone(), role.space_id), UtilsError::<T>::ContentIsBlocked);
+          ensure!(T::IsContentBlocked::is_allowed_content(content.clone(), role.space_id), UtilsError::<T>::ContentIsBlocked);
 
           role.content = content;
           is_update_applied = true;
@@ -239,7 +245,6 @@ decl_module! {
 
       let role = Self::require_role(role_id)?;
 
-      ensure!(!T::IsAccountBlocked::is_account_blocked(who.clone(), role.space_id), UtilsError::<T>::AccountIsBlocked);
       Self::ensure_role_manager(who.clone(), role.space_id)?;
 
       let users = Self::users_by_role_id(role_id);
@@ -275,15 +280,14 @@ decl_module! {
 
       let role = Self::require_role(role_id)?;
 
-      ensure!(!T::IsAccountBlocked::is_account_blocked(who.clone(), role.space_id), UtilsError::<T>::AccountIsBlocked);
       Self::ensure_role_manager(who.clone(), role.space_id)?;
 
       for user in users_set.iter() {
         if !Self::users_by_role_id(role_id).contains(&user) {
           <UsersByRoleId<T>>::mutate(role_id, |users| { users.push(user.clone()); });
         }
-        if !Self::role_ids_by_user_in_space((user.clone(), role.space_id)).contains(&role_id) {
-          <RoleIdsByUserInSpace<T>>::mutate((user.clone(), role.space_id), |roles| { roles.push(role_id); })
+        if !Self::role_ids_by_user_in_space(user.clone(), role.space_id).contains(&role_id) {
+          <RoleIdsByUserInSpace<T>>::mutate(user.clone(), role.space_id, |roles| { roles.push(role_id); })
         }
       }
 
@@ -301,7 +305,6 @@ decl_module! {
 
       let role = Self::require_role(role_id)?;
 
-      ensure!(!T::IsAccountBlocked::is_account_blocked(who.clone(), role.space_id), UtilsError::<T>::AccountIsBlocked);
       Self::ensure_role_manager(who.clone(), role.space_id)?;
 
       role.revoke_from_users(users.clone());
