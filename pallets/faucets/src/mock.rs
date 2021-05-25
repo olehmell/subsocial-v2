@@ -65,17 +65,6 @@ impl system::Trait for Test {
 }
 
 parameter_types! {
-    pub const MinimumPeriod: u64 = 5;
-}
-
-impl pallet_timestamp::Trait for Test {
-    type Moment = u64;
-    type OnTimestampSet = ();
-    type MinimumPeriod = MinimumPeriod;
-    type WeightInfo = ();
-}
-
-parameter_types! {
     pub const ExistentialDeposit: u64 = 1;
 }
 
