@@ -12,7 +12,7 @@
   "protocolId": "sub",
   "properties": {
     "ss58Format": 28,
-    "tokenDecimals": 12,
+    "tokenDecimals": 11,
     "tokenSymbol": "SUB"
   },
   "consensusEngine": null,

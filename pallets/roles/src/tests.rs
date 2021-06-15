@@ -574,7 +574,7 @@ fn delete_role_should_fail_with_too_many_users_for_delete_role() {
 
         assert_ok!(_create_default_role()); // RoleId 1
         assert_ok!(_grant_role(None, None, Some(users))); // Grant RoleId 1 to ACCOUNT2-ACCOUNT20
-        assert_noop!(_delete_default_role(), Error::<Test>::TooManyUsersToDelete);
+        assert_noop!(_delete_default_role(), Error::<Test>::TooManyUsersToDeleteRole);
     });
 }
 

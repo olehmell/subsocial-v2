@@ -15,7 +15,7 @@ use pallet_posts::{PostId, PostExtension};
 use pallet_spaces::{RESERVED_SPACE_COUNT, SpaceById};
 
 pub use pallet_utils::mock_functions::valid_content_ipfs;
-use pallet_utils::{Content, SpaceId};
+use pallet_utils::{Content, SpaceId, PostId};
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
