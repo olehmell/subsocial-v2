@@ -11,7 +11,7 @@ use frame_system as system;
 
 use crate as moderation;
 
-use pallet_posts::{PostId, PostExtension};
+use pallet_posts::PostExtension;
 use pallet_spaces::{RESERVED_SPACE_COUNT, SpaceById};
 
 pub use pallet_utils::mock_functions::valid_content_ipfs;

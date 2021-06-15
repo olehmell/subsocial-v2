@@ -27,6 +27,7 @@ hex-literal = '0.3.1'
 
 # Local dependencies
 subsocial-runtime = { path = '../runtime' }
+subsocial-primitives = { path = '../primitives' }
 space-follows-rpc = { path = '../pallets/space-follows/rpc' }
 spaces-rpc = { path = '../pallets/spaces/rpc' }
 posts-rpc = { path = '../pallets/posts/rpc' }

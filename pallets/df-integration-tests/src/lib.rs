@@ -33,7 +33,7 @@ mod tests {
     use pallet_moderation::{EntityId, EntityStatus, ReportId};
     use pallet_utils::{
         mock_functions::*,
-        Error as UtilsError, Module as Utils,
+        Error as UtilsError,
         SpaceId, PostId, User, Content,
     };
 
