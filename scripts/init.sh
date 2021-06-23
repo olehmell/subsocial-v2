@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-
+# This script meant to be run on Unix/Linux based systems
 set -e
 
 echo "*** Initializing WASM build environment"
@@ -13,8 +13,4 @@ if [ -z $CI_PROJECT_NAME ] ; then
 fi
 
 rustup target add wasm32-unknown-unknown --toolchain $RUSTC_VERSION
-
-command -v wasm-gc || \
-	cargo +$RUSTC_VERSION install --git https://github.com/alexcrichton/wasm-gc --force
-
 rustup override set $RUSTC_VERSION
