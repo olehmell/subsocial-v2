@@ -19,7 +19,8 @@ use crate::{chain_spec, service};
 use crate::cli::{Cli, Subcommand};
 use sc_cli::{SubstrateCli, RuntimeVersion, Role, ChainSpec};
 use sc_service::PartialComponents;
-use subsocial_runtime::Block;
+use subsocial_primitives::Block;
+use crate::service::new_partial;
 
 impl SubstrateCli for Cli {
     fn impl_name() -> String {
@@ -63,7 +64,7 @@ impl SubstrateCli for Cli {
     }
 }
 
-/// Parse and run command line arguments
+/// Parse command line arguments into service configuration.
 pub fn run() -> sc_cli::Result<()> {
     let cli = Cli::from_args();
 
@@ -77,7 +78,7 @@ pub fn run() -> sc_cli::Result<()> {
             let runner = cli.create_runner(cmd)?;
             runner.async_run(|config| {
                 let PartialComponents { client, task_manager, import_queue, ..}
-                    = service::new_partial(&config)?;
+                    = new_partial(&config)?;
                 Ok((cmd.run(client, import_queue), task_manager))
             })
         },
@@ -85,7 +86,7 @@ pub fn run() -> sc_cli::Result<()> {
             let runner = cli.create_runner(cmd)?;
             runner.async_run(|config| {
                 let PartialComponents { client, task_manager, ..}
-                    = service::new_partial(&config)?;
+                    = new_partial(&config)?;
                 Ok((cmd.run(client, config.database), task_manager))
             })
         },
@@ -93,7 +94,7 @@ pub fn run() -> sc_cli::Result<()> {
             let runner = cli.create_runner(cmd)?;
             runner.async_run(|config| {
                 let PartialComponents { client, task_manager, ..}
-                    = service::new_partial(&config)?;
+                    = new_partial(&config)?;
                 Ok((cmd.run(client, config.chain_spec), task_manager))
             })
         },
@@ -101,7 +102,7 @@ pub fn run() -> sc_cli::Result<()> {
             let runner = cli.create_runner(cmd)?;
             runner.async_run(|config| {
                 let PartialComponents { client, task_manager, import_queue, ..}
-                    = service::new_partial(&config)?;
+                    = new_partial(&config)?;
                 Ok((cmd.run(client, import_queue), task_manager))
             })
         },
@@ -113,7 +114,7 @@ pub fn run() -> sc_cli::Result<()> {
             let runner = cli.create_runner(cmd)?;
             runner.async_run(|config| {
                 let PartialComponents { client, task_manager, backend, ..}
-                    = service::new_partial(&config)?;
+                    = new_partial(&config)?;
                 Ok((cmd.run(client, backend), task_manager))
             })
         },

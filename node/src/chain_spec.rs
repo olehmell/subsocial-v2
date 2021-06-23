@@ -1,11 +1,10 @@
 use sp_core::{Pair, Public, sr25519, crypto::UncheckedInto};
 use subsocial_runtime::{
-	AccountId, AuraConfig, BalancesConfig,
-	GenesisConfig, GrandpaConfig, UtilsConfig,
-	SudoConfig, SpacesConfig, SystemConfig,
-	WASM_BINARY, Signature, constants::currency::DOLLARS,
+    AccountId, BabeConfig, BalancesConfig, GenesisConfig, GrandpaConfig,
+    SudoConfig, SystemConfig, WASM_BINARY, Signature,
+    constants::currency::DOLLARS,
 };
-use sp_consensus_aura::sr25519::AuthorityId as AuraId;
+use sp_consensus_babe::AuthorityId as BabeId;
 use sp_finality_grandpa::AuthorityId as GrandpaId;
 use sp_runtime::traits::{Verify, IdentifyAccount};
 use sc_service::{ChainType, Properties};
@@ -36,86 +35,94 @@ pub fn get_account_id_from_seed<TPublic: Public>(seed: &str) -> AccountId where
 }
 
 /// Generate an Aura authority key.
-pub fn authority_keys_from_seed(s: &str) -> (AuraId, GrandpaId) {
+pub fn authority_keys_from_seed(s: &str) -> (BabeId, GrandpaId) {
     (
-        get_from_seed::<AuraId>(s),
+        get_from_seed::<BabeId>(s),
         get_from_seed::<GrandpaId>(s),
     )
 }
 
+fn testnet_endowed_accounts() -> Vec<AccountId> {
+    vec![
+        get_account_id_from_seed::<sr25519::Public>("Alice"),
+        get_account_id_from_seed::<sr25519::Public>("Bob"),
+        get_account_id_from_seed::<sr25519::Public>("Charlie"),
+        get_account_id_from_seed::<sr25519::Public>("Dave"),
+        get_account_id_from_seed::<sr25519::Public>("Eve"),
+    ]
+}
+
 pub fn development_config() -> Result<ChainSpec, String> {
-    let wasm_binary = WASM_BINARY.ok_or_else(|| "Development wasm binary not available".to_string())?;
+    let wasm_binary = WASM_BINARY.ok_or_else(|| "Development wasm not available".to_string())?;
 
     Ok(ChainSpec::from_genesis(
         "Development",
         "dev",
         ChainType::Development,
-        move || {
-            let endowed_accounts = vec![
-                get_account_id_from_seed::<sr25519::Public>("Alice"),
-                get_account_id_from_seed::<sr25519::Public>("Bob"),
-                get_account_id_from_seed::<sr25519::Public>("Charlie"),
-                get_account_id_from_seed::<sr25519::Public>("Dave"),
-                get_account_id_from_seed::<sr25519::Public>("Eve"),
-            ];
-
-            testnet_genesis(
-                wasm_binary,
-                vec![
-                    authority_keys_from_seed("Alice"),
-                ],
-                get_account_id_from_seed::<sr25519::Public>("Alice"),
-                endowed_accounts.iter().cloned().map(|k| (k, 100_000)).collect(),
-                get_account_id_from_seed::<sr25519::Public>("Ferdie"),
-                true,
-            )
-        },
+        move || testnet_genesis(
+            wasm_binary,
+            // Initial PoA authorities
+            vec![
+                authority_keys_from_seed("Alice"),
+            ],
+            // Sudo account
+            get_account_id_from_seed::<sr25519::Public>("Alice"),
+            // Pre-funded accounts
+            testnet_endowed_accounts().iter().cloned().map(|k| (k, 100_000)).collect(),
+            get_account_id_from_seed::<sr25519::Public>("Ferdie"),
+            true,
+        ),
+        // Bootnodes
         vec![],
+        // Telemetry
         None,
+        // Protocol ID
         Some(DEFAULT_PROTOCOL_ID),
+        // Properties
         Some(subsocial_properties()),
+        // Extensions
         None,
     ))
 }
 
 pub fn local_testnet_config() -> Result<ChainSpec, String> {
-    let wasm_binary = WASM_BINARY.ok_or_else(|| "Development wasm binary not available".to_string())?;
+    let wasm_binary = WASM_BINARY.ok_or_else(|| "Development wasm not available".to_string())?;
 
     Ok(ChainSpec::from_genesis(
+        // Name
         "Local Testnet",
+        // ID
         "local_testnet",
         ChainType::Local,
-        move || {
-            let endowed_accounts = vec![
-                get_account_id_from_seed::<sr25519::Public>("Alice"),
-                get_account_id_from_seed::<sr25519::Public>("Bob"),
-                get_account_id_from_seed::<sr25519::Public>("Charlie"),
-                get_account_id_from_seed::<sr25519::Public>("Dave"),
-                get_account_id_from_seed::<sr25519::Public>("Eve"),
-            ];
-
-            testnet_genesis(
-                wasm_binary,
-                vec![
-                    authority_keys_from_seed("Alice"),
-                    authority_keys_from_seed("Bob"),
-                ],
-                get_account_id_from_seed::<sr25519::Public>("Alice"),
-                endowed_accounts.iter().cloned().map(|k| (k, 100_000)).collect(),
-                get_account_id_from_seed::<sr25519::Public>("Ferdie"),
-                true,
-            )
-        },
+        move || testnet_genesis(
+            wasm_binary,
+            // Initial PoA authorities
+            vec![
+                authority_keys_from_seed("Alice"),
+                authority_keys_from_seed("Bob"),
+            ],
+            // Sudo account
+            get_account_id_from_seed::<sr25519::Public>("Alice"),
+            // Pre-funded accounts
+            testnet_endowed_accounts().iter().cloned().map(|k| (k, 100_000)).collect(),
+            get_account_id_from_seed::<sr25519::Public>("Ferdie"),
+            true,
+        ),
+        // Bootnodes
         vec![],
+        // Telemetry
         None,
-        Some(DEFAULT_PROTOCOL_ID),
-        Some(subsocial_properties()),
+        // Protocol ID
+        None,
+        // Properties
+        None,
+        // Extensions
         None,
     ))
 }
 
 pub fn subsocial_config() -> Result<ChainSpec, String> {
-	ChainSpec::from_json_bytes(&include_bytes!("../res/subsocial.json")[..])
+    ChainSpec::from_json_bytes(&include_bytes!("../res/subsocial.json")[..])
 }
 
 pub fn subsocial_staging_config() -> Result<ChainSpec, String> {
@@ -191,36 +198,33 @@ pub fn subsocial_staging_config() -> Result<ChainSpec, String> {
 
 fn testnet_genesis(
     wasm_binary: &[u8],
-	initial_authorities: Vec<(AuraId, GrandpaId)>,
-	root_key: AccountId,
-	endowed_accounts: Vec<(AccountId, u128)>,
-	treasury_account_id: AccountId,
-	_enable_println: bool
+    initial_authorities: Vec<(BabeId, GrandpaId)>,
+    root_key: AccountId,
+    endowed_accounts: Vec<(AccountId, u128)>,
+    _treasury_account_id: AccountId,
+    _enable_println: bool,
 ) -> GenesisConfig {
-	GenesisConfig {
+    GenesisConfig {
         frame_system: Some(SystemConfig {
-			code: wasm_binary.to_vec(),
-			changes_trie_config: Default::default(),
-		}),
+            // Add Wasm runtime to storage.
+            code: wasm_binary.to_vec(),
+            changes_trie_config: Default::default(),
+        }),
         pallet_balances: Some(BalancesConfig {
-			balances: endowed_accounts.iter().cloned().map(|(k, b)|(k, b * DOLLARS)).collect(),
-		}),
-		pallet_aura: Some(AuraConfig {
-			authorities: initial_authorities.iter().map(|x| (x.0.clone())).collect(),
-		}),
+            // Configure endowed accounts with initial balance of 1 << 60.
+            balances: endowed_accounts.iter().cloned().map(|(k, b)|(k, b * DOLLARS)).collect(),
+        }),
+        pallet_babe: Some(BabeConfig {
+            authorities: initial_authorities.iter().map(|x| (x.0.clone(), 1)).collect(),
+        }),
         pallet_grandpa: Some(GrandpaConfig {
-			authorities: initial_authorities.iter().map(|x| (x.1.clone(), 1)).collect(),
-		}),
-		pallet_sudo: Some(SudoConfig {
-			key: root_key.clone(),
-		}),
-		pallet_utils: Some(UtilsConfig {
-			treasury_account: treasury_account_id,
-		}),
-		pallet_spaces: Some(SpacesConfig {
-			endowed_account: root_key,
-		}),
-	}
+            authorities: initial_authorities.iter().map(|x| (x.1.clone(), 1)).collect(),
+        }),
+        pallet_sudo: Some(SudoConfig {
+            // Assign network admin rights.
+            key: root_key,
+        }),
+    }
 }
 
 pub fn subsocial_properties() -> Properties {
