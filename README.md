@@ -35,7 +35,7 @@ You need to have docker installed for this type of build.
 Add SRTool alias:
 
 ```sh
-export RUSTC_VERSION=nightly-2021-03-15; export PACKAGE=subsocial-runtime; alias srtool='docker run --rm -it -e RUNTIME_DIR=runtime -e PACKAGE=$PACKAGE -v $PWD:/build -v "$TMPDIR"/cargo:/cargo-home chevdor/srtool:$RUSTC_VERSION'
+export RUSTC_VERSION=nightly-2021-06-01; export PACKAGE=subsocial-runtime; alias srtool='docker run --rm -it -e RUNTIME_DIR=runtime -e PACKAGE=$PACKAGE -v $PWD:/build -v "$TMPDIR"/cargo:/cargo-home chevdor/srtool:$RUSTC_VERSION'
 ```
 
 Run build:
