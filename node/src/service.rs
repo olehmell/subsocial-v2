@@ -1,7 +1,6 @@
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
 use std::sync::Arc;
-use std::time::Duration;
 use sc_client_api::{ExecutorProvider, RemoteBackend};
 use subsocial_runtime::{self, RuntimeApi};
 use subsocial_primitives::Block;
@@ -15,9 +14,6 @@ use sp_runtime::traits::Block as BlockT;
 use futures::prelude::*;
 use sc_executor::native_executor_instance;
 pub use sc_executor::NativeExecutor;
-use sp_consensus_babe::AuthorityPair as BabePair;
-use sc_finality_grandpa::SharedVoterState;
-use sc_keystore::LocalKeystore;
 use sc_telemetry::TelemetryConnectionNotifier;
 
 // Our native executor instance.
@@ -152,13 +148,6 @@ pub fn new_partial(config: &Configuration) -> Result<sc_service::PartialComponen
         inherent_data_providers,
         other: (rpc_extensions_builder, import_setup, rpc_setup),
     })
-}
-
-fn remote_keystore(_url: &String) -> Result<Arc<LocalKeystore>, &'static str> {
-    // FIXME: here would the concrete keystore be built,
-    //        must return a concrete type (NOT `LocalKeystore`) that
-    //        implements `CryptoStore` and `SyncCryptoStore`
-    Err("Remote Keystore not supported.")
 }
 
 pub struct NewFullBase {
