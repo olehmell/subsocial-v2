@@ -2,12 +2,9 @@
 
 use codec::{Decode, Encode};
 use frame_support::{
-    decl_error, decl_module, decl_storage, decl_event,
+    decl_error, decl_module, decl_event,
     dispatch::{DispatchError, DispatchResult}, ensure,
-    traits::{
-        Currency, Get,
-        Imbalance, OnUnbalanced,
-    },
+    traits::{Currency, Get},
 };
 use frame_system as system;
 
@@ -119,8 +116,6 @@ impl Content {
 
 type BalanceOf<T> = <<T as Config>::Currency as Currency<<T as system::Config>::AccountId>>::Balance;
 
-type NegativeImbalanceOf<T> = <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::NegativeImbalance;
-
 pub trait Config: system::Config + pallet_timestamp::Config
 {
     /// The overarching event type.
@@ -134,22 +129,6 @@ pub trait Config: system::Config + pallet_timestamp::Config
 
     /// Max length of a space handle.
     type MaxHandleLen: Get<u32>;
-}
-
-decl_storage! {
-    trait Store for Module<T: Config> as UtilsModule {
-        pub TreasuryAccount get(fn treasury_account) build(|config| config.treasury_account.clone()): T::AccountId;
-    }
-    add_extra_genesis {
-        config(treasury_account): T::AccountId;
-        build(|config| {
-			// Create Treasury account
-			let _ = T::Currency::make_free_balance_be(
-				&config.treasury_account,
-				T::Currency::minimum_balance(),
-			);
-		});
-    }
 }
 
 decl_module! {
@@ -288,17 +267,5 @@ impl<T: Config> Module<T> {
     pub fn ensure_content_is_some(content: &Content) -> DispatchResult {
         ensure!(content.is_some(), Error::<T>::ContentIsEmpty);
         Ok(())
-    }
-}
-
-impl<T: Config> OnUnbalanced<NegativeImbalanceOf<T>> for Module<T> {
-    fn on_nonzero_unbalanced(amount: NegativeImbalanceOf<T>) {
-        let numeric_amount = amount.peek();
-        let treasury_account = TreasuryAccount::<T>::get();
-
-        // Must resolve into existing but better to be safe.
-        let _ = T::Currency::resolve_creating(&treasury_account, amount);
-
-        Self::deposit_event(RawEvent::Deposit(numeric_amount));
     }
 }

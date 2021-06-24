@@ -28,7 +28,7 @@ frame_support::construct_runtime!(
         System: system::{Module, Call, Config, Storage, Event<T>},
         Balances: pallet_balances::{Module, Call, Storage, Config<T>, Event<T>},
         Faucets: faucets::{Module, Call, Storage, Event<T>},
-        Utils: pallet_utils::{Module, Storage, Event<T>, Config<T>},
+        Utils: pallet_utils::{Module, Event<T>},
     }
 );
 

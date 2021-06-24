@@ -23,7 +23,7 @@ frame_support::construct_runtime!(
     {
         System: system::{Module, Call, Config, Storage, Event<T>},
         Balances: pallet_balances::{Module, Call, Storage, Config<T>, Event<T>},
-        Utils: utils::{Module, Storage, Event<T>, Config<T>},
+        Utils: utils::{Module, Event<T>},
     }
 );
 

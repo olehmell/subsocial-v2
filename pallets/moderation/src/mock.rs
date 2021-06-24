@@ -35,7 +35,7 @@ frame_support::construct_runtime!(
 		Roles: pallet_roles::{Module, Call, Storage, Event<T>},
 		SpaceFollows: pallet_space_follows::{Module, Call, Storage, Event<T>},
 		Spaces: pallet_spaces::{Module, Call, Storage, Event<T>, Config<T>},
-        Utils: pallet_utils::{Module, Storage, Event<T>, Config<T>},
+        Utils: pallet_utils::{Module, Event<T>},
     }
 );
 

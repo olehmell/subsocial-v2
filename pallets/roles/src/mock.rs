@@ -39,7 +39,7 @@ frame_support::construct_runtime!(
         Balances: pallet_balances::{Module, Call, Storage, Config<T>, Event<T>},
         Timestamp: pallet_timestamp::{Module, Call, Storage, Inherent},
         Roles: roles::{Module, Call, Storage, Event<T>},
-        Utils: pallet_utils::{Module, Storage, Event<T>, Config<T>},
+        Utils: pallet_utils::{Module, Event<T>},
     }
 );
 
