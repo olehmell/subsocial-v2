@@ -1,18 +1,28 @@
-use sp_core::{Pair, Public, sr25519, crypto::UncheckedInto};
+use sp_core::{Pair, Public, sr25519/*, crypto::UncheckedInto*/};
+use subsocial_primitives::Balance;
 use subsocial_runtime::{
-    AccountId, BabeConfig, BalancesConfig, GenesisConfig, GrandpaConfig,
-    SudoConfig, SystemConfig, WASM_BINARY, Signature,
+    AccountId, GenesisConfig, SessionKeys, StakerStatus,
     constants::currency::DOLLARS,
 };
+use subsocial_runtime::{
+    SessionConfig, StakingConfig, BalancesConfig, SudoConfig,
+    ElectionsConfig, TechnicalCommitteeConfig,
+    SpacesConfig, SystemConfig, WASM_BINARY, Signature,
+};
 use sp_consensus_babe::AuthorityId as BabeId;
+use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
+use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use sp_finality_grandpa::AuthorityId as GrandpaId;
-use sp_runtime::traits::{Verify, IdentifyAccount};
+use sp_runtime::{
+    Perbill,
+    traits::{Verify, IdentifyAccount},
+};
 use sc_service::{ChainType, Properties};
-use sc_telemetry::TelemetryEndpoints;
-use hex_literal::hex;
+// use sc_telemetry::TelemetryEndpoints;
+// use hex_literal::hex;
 
 // The URL for the telemetry server.
-const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
+// const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
 const DEFAULT_PROTOCOL_ID: &str = "sub";
 
 /// Specialized `ChainSpec`. This is a specialization of the general Substrate ChainSpec type.
@@ -34,18 +44,40 @@ pub fn get_account_id_from_seed<TPublic: Public>(seed: &str) -> AccountId where
     AccountPublic::from(get_from_seed::<TPublic>(seed)).into_account()
 }
 
-/// Generate an Aura authority key.
-pub fn authority_keys_from_seed(s: &str) -> (BabeId, GrandpaId) {
+/// Helper function to generate stash, controller and session key from seed
+pub fn authority_keys_from_seed(seed: &str) -> (
+    AccountId,
+    AccountId,
+    GrandpaId,
+    BabeId,
+    ImOnlineId,
+    AuthorityDiscoveryId,
+) {
     (
-        get_from_seed::<BabeId>(s),
-        get_from_seed::<GrandpaId>(s),
+        get_account_id_from_seed::<sr25519::Public>(&format!("{}//stash", seed)),
+        get_account_id_from_seed::<sr25519::Public>(seed),
+        get_from_seed::<GrandpaId>(seed),
+        get_from_seed::<BabeId>(seed),
+        get_from_seed::<ImOnlineId>(seed),
+        get_from_seed::<AuthorityDiscoveryId>(seed),
     )
+}
+
+fn session_keys(
+    grandpa: GrandpaId,
+    babe: BabeId,
+    im_online: ImOnlineId,
+    authority_discovery: AuthorityDiscoveryId,
+) -> SessionKeys {
+    SessionKeys { grandpa, babe, im_online, authority_discovery }
 }
 
 fn testnet_endowed_accounts() -> Vec<AccountId> {
     vec![
         get_account_id_from_seed::<sr25519::Public>("Alice"),
+        get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
         get_account_id_from_seed::<sr25519::Public>("Bob"),
+        get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
         get_account_id_from_seed::<sr25519::Public>("Charlie"),
         get_account_id_from_seed::<sr25519::Public>("Dave"),
         get_account_id_from_seed::<sr25519::Public>("Eve"),
@@ -69,8 +101,6 @@ pub fn development_config() -> Result<ChainSpec, String> {
             get_account_id_from_seed::<sr25519::Public>("Alice"),
             // Pre-funded accounts
             testnet_endowed_accounts().iter().cloned().map(|k| (k, 100_000)).collect(),
-            get_account_id_from_seed::<sr25519::Public>("Ferdie"),
-            true,
         ),
         // Bootnodes
         vec![],
@@ -105,8 +135,6 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
             get_account_id_from_seed::<sr25519::Public>("Alice"),
             // Pre-funded accounts
             testnet_endowed_accounts().iter().cloned().map(|k| (k, 100_000)).collect(),
-            get_account_id_from_seed::<sr25519::Public>("Ferdie"),
-            true,
         ),
         // Bootnodes
         vec![],
@@ -125,7 +153,7 @@ pub fn subsocial_config() -> Result<ChainSpec, String> {
     ChainSpec::from_json_bytes(&include_bytes!("../res/subsocial.json")[..])
 }
 
-pub fn subsocial_staging_config() -> Result<ChainSpec, String> {
+/*pub fn subsocial_staging_config() -> Result<ChainSpec, String> {
     let wasm_binary = WASM_BINARY.ok_or_else(|| "Staging wasm binary not available".to_string())?;
 
     Ok(ChainSpec::from_genesis(
@@ -194,16 +222,24 @@ pub fn subsocial_staging_config() -> Result<ChainSpec, String> {
         Some(subsocial_properties()),
         None,
     ))
-}
+}*/
 
 fn testnet_genesis(
     wasm_binary: &[u8],
-    initial_authorities: Vec<(BabeId, GrandpaId)>,
+    initial_authorities: Vec<(
+        AccountId,
+        AccountId,
+        GrandpaId,
+        BabeId,
+        ImOnlineId,
+        AuthorityDiscoveryId,
+    )>,
     root_key: AccountId,
     endowed_accounts: Vec<(AccountId, u128)>,
-    _treasury_account_id: AccountId,
-    _enable_println: bool,
 ) -> GenesisConfig {
+    const STASH: Balance = 100 * DOLLARS;
+    let num_endowed_accounts = endowed_accounts.len();
+
     GenesisConfig {
         frame_system: Some(SystemConfig {
             // Add Wasm runtime to storage.
@@ -214,16 +250,63 @@ fn testnet_genesis(
             // Configure endowed accounts with initial balance of 1 << 60.
             balances: endowed_accounts.iter().cloned().map(|(k, b)|(k, b * DOLLARS)).collect(),
         }),
-        pallet_babe: Some(BabeConfig {
-            authorities: initial_authorities.iter().map(|x| (x.0.clone(), 1)).collect(),
-        }),
-        pallet_grandpa: Some(GrandpaConfig {
-            authorities: initial_authorities.iter().map(|x| (x.1.clone(), 1)).collect(),
-        }),
+        pallet_indices: Default::default(),
+        pallet_babe: Default::default(),
+        pallet_grandpa: Default::default(),
         pallet_sudo: Some(SudoConfig {
             // Assign network admin rights.
-            key: root_key,
+            key: root_key.clone(),
         }),
+        pallet_spaces: Some(SpacesConfig {
+            endowed_account: root_key,
+        }),
+        pallet_session: Some(SessionConfig {
+            keys: initial_authorities.iter().map(|x| {
+                (x.0.clone(), x.0.clone(), session_keys(
+                    x.2.clone(),
+                    x.3.clone(),
+                    x.4.clone(),
+                    x.5.clone(),
+                ))
+            }).collect::<Vec<_>>(),
+        }),
+        pallet_staking: Some(StakingConfig {
+            validator_count: initial_authorities.len() as u32 * 2,
+            minimum_validator_count: initial_authorities.len() as u32,
+            stakers: initial_authorities.iter().map(|x| {
+                (
+                    x.0.clone(),
+                    x.1.clone(),
+                    STASH,
+                    StakerStatus::Validator
+                )
+            }).collect(),
+            invulnerables: initial_authorities.iter().map(|x| x.0.clone()).collect(),
+            slash_reward_fraction: Perbill::from_percent(10),
+            ..Default::default()
+        }),
+        pallet_elections_phragmen: Some(ElectionsConfig {
+            members: endowed_accounts.iter()
+                .take((num_endowed_accounts + 1) / 2)
+                .cloned()
+                .map(|(member, _)| (member, STASH))
+                .collect(),
+        }),
+        pallet_im_online: Default::default(),
+        pallet_authority_discovery: Default::default(),
+        pallet_democracy: Default::default(),
+        pallet_collective_Instance1: Default::default(),
+        pallet_collective_Instance2: Some(TechnicalCommitteeConfig {
+            members: endowed_accounts.iter()
+                .take((num_endowed_accounts + 1) / 2)
+                .cloned()
+                .map(|(member, _)| member)
+                .collect(),
+            phantom: Default::default(),
+        }),
+        pallet_membership_Instance1: Default::default(),
+        pallet_treasury: Default::default(),
+        pallet_vesting: Default::default(),
     }
 }
 
