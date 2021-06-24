@@ -179,7 +179,7 @@ pub fn create_full<C, P, SC, B>(
         sc_sync_state_rpc::SyncStateRpcApi::to_delegate(
             sc_sync_state_rpc::SyncStateRpcHandler::new(
                 chain_spec,
-                client,
+                client.clone(),
                 shared_authority_set,
                 shared_epoch_changes,
                 deny_unsafe,
@@ -187,33 +187,33 @@ pub fn create_full<C, P, SC, B>(
         )
     );
 
-    // io.extend_with(
-    //     PostsApi::to_delegate(Posts::new(client.clone()),
-    // ));
-    //
-    // io.extend_with(
-    //     ProfileFollowsApi::to_delegate(ProfileFollows::new(client.clone()),
-    // ));
-    //
-    // io.extend_with(
-    //     ProfilesApi::to_delegate(Profiles::new(client.clone()),
-    // ));
-    //
-    // io.extend_with(
-    //     ReactionsApi::to_delegate(Reactions::new(client.clone()),
-    // ));
-    //
-    // io.extend_with(
-    //     RolesApi::to_delegate(Roles::new(client.clone()),
-    // ));
-    //
-    // io.extend_with(
-    //     SpacesApi::to_delegate(Spaces::new(client.clone()),
-    // ));
-    //
-    // io.extend_with(
-    //     SpaceFollowsApi::to_delegate(SpaceFollows::new(client.clone()),
-    // ));
+    io.extend_with(
+        PostsApi::to_delegate(Posts::new(client.clone()),
+    ));
+
+    io.extend_with(
+        ProfileFollowsApi::to_delegate(ProfileFollows::new(client.clone()),
+    ));
+
+    io.extend_with(
+        ProfilesApi::to_delegate(Profiles::new(client.clone()),
+    ));
+
+    io.extend_with(
+        ReactionsApi::to_delegate(Reactions::new(client.clone()),
+    ));
+
+    io.extend_with(
+        RolesApi::to_delegate(Roles::new(client.clone()),
+    ));
+
+    io.extend_with(
+        SpacesApi::to_delegate(Spaces::new(client.clone()),
+    ));
+
+    io.extend_with(
+        SpaceFollowsApi::to_delegate(SpaceFollows::new(client.clone()),
+    ));
 
     io
 }
