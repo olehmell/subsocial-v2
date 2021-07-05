@@ -23,9 +23,7 @@ serde = { version = '1.0.119', optional = true, features = ['derive'] }
 static_assertions = '1.1.0'
 
 # Local dependencies
-#pallet-donations = { default-features = false, path = '../pallets/donations' }
 pallet-faucets = { default-features = false, path = '../pallets/faucets' }
-#pallet-moderation = { default-features = false, path = '../pallets/moderation' }
 pallet-permissions = { default-features = false, path = '../pallets/permissions' }
 
 pallet-post-history = { default-features = false, path = '../pallets/post-history' }
@@ -38,14 +36,12 @@ pallet-profiles = { default-features = false, path = '../pallets/profiles' }
 pallet-reactions = { default-features = false, path = '../pallets/reactions' }
 pallet-roles = { default-features = false, path = '../pallets/roles' }
 pallet-scores = { default-features = false, path = '../pallets/scores' }
-#pallet-session-keys = { default-features = false, path = '../pallets/session-keys' }
 
 pallet-space-follows = { default-features = false, path = '../pallets/space-follows' }
 pallet-space-history = { default-features = false, path = '../pallets/space-history' }
 pallet-space-ownership = { default-features = false, path = '../pallets/space-ownership' }
 pallet-spaces = { default-features = false, path = '../pallets/spaces' }
 
-#pallet-subscriptions = { default-features = false, path = '../pallets/subscriptions' }
 pallet-utils = { default-features = false, path = '../pallets/utils' }
 
 # Custom Runtime APIs
@@ -195,9 +191,7 @@ std = [
     'sp-transaction-pool/std',
     'sp-version/std',
     'subsocial-primitives/std',
-#    'pallet-donations/std',
     'pallet-faucets/std',
-#    'pallet-moderation/std',
     'pallet-permissions/std',
     'pallet-post-history/std',
     'pallet-posts/std',
@@ -211,8 +205,6 @@ std = [
     'pallet-space-history/std',
     'pallet-space-ownership/std',
     'pallet-spaces/std',
-#    'session-keys/std',
-#    'pallet-subscriptions/std',
     'pallet-utils/std',
     'posts-runtime-api/std',
     'profile-follows-runtime-api/std',

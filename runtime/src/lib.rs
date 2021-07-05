@@ -1154,10 +1154,6 @@ construct_runtime!(
 		// New experimental pallets. Not recommended to use in production yet.
 
 		Faucets: pallet_faucets::{Module, Call, Storage, Event<T>},
-		// SessionKeys: pallet_session_keys::{Module, Call, Storage, Event<T>},
-		// Moderation: pallet_moderation::{Module, Call, Storage, Event<T>},
-		// Donations: pallet_donations::{Module, Call, Storage, Event<T>},
-		// Subscriptions: pallet_subscriptions::{Module, Call, Storage, Event<T>},
 	}
 );
 
