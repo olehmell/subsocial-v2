@@ -905,9 +905,8 @@ parameter_types! {
 impl pallet_posts::Config for Runtime {
 	type Event = Event;
 	type MaxCommentDepth = MaxCommentDepth;
-	type PostScores = Scores;
 	type AfterPostUpdated = PostHistory;
-	type IsPostBlocked = ()/*Moderation*/;
+	type IsPostBlocked = ();
 }
 
 parameter_types! {}
@@ -918,8 +917,8 @@ parameter_types! {}
 
 impl pallet_profile_follows::Config for Runtime {
 	type Event = Event;
-	type BeforeAccountFollowed = Scores;
-	type BeforeAccountUnfollowed = Scores;
+	type BeforeAccountFollowed = ();
+	type BeforeAccountUnfollowed = ();
 }
 
 parameter_types! {}
@@ -937,7 +936,6 @@ parameter_types! {}
 
 impl pallet_reactions::Config for Runtime {
 	type Event = Event;
-	type PostReactionScores = Scores;
 }
 
 parameter_types! {
@@ -949,8 +947,8 @@ impl pallet_roles::Config for Runtime {
 	type MaxUsersToProcessPerDeleteRole = MaxUsersToProcessPerDeleteRole;
 	type Spaces = Spaces;
 	type SpaceFollows = SpaceFollows;
-	type IsAccountBlocked = ()/*Moderation*/;
-	type IsContentBlocked = ()/*Moderation*/;
+	type IsAccountBlocked = ();
+	type IsContentBlocked = ();
 }
 
 parameter_types! {
@@ -967,28 +965,12 @@ parameter_types! {
   pub const DownvoteCommentActionWeight: i16 = -2;
 }
 
-impl pallet_scores::Config for Runtime {
-	type Event = Event;
-
-	type FollowSpaceActionWeight = FollowSpaceActionWeight;
-	type FollowAccountActionWeight = FollowAccountActionWeight;
-
-	type SharePostActionWeight = SharePostActionWeight;
-	type UpvotePostActionWeight = UpvotePostActionWeight;
-	type DownvotePostActionWeight = DownvotePostActionWeight;
-
-	type CreateCommentActionWeight = CreateCommentActionWeight;
-	type ShareCommentActionWeight = ShareCommentActionWeight;
-	type UpvoteCommentActionWeight = UpvoteCommentActionWeight;
-	type DownvoteCommentActionWeight = DownvoteCommentActionWeight;
-}
-
 parameter_types! {}
 
 impl pallet_space_follows::Config for Runtime {
 	type Event = Event;
-	type BeforeSpaceFollowed = Scores;
-	type BeforeSpaceUnfollowed = Scores;
+	type BeforeSpaceFollowed = ();
+	type BeforeSpaceUnfollowed = ();
 }
 
 parameter_types! {}
@@ -1008,8 +990,8 @@ impl pallet_spaces::Config for Runtime {
 	type SpaceFollows = SpaceFollows;
 	type BeforeSpaceCreated = SpaceFollows;
 	type AfterSpaceUpdated = SpaceHistory;
-	type IsAccountBlocked = ()/*Moderation*/;
-	type IsContentBlocked = ()/*Moderation*/;
+	type IsAccountBlocked = ();
+	type IsContentBlocked = ();
 	type HandleDeposit = HandleDeposit;
 }
 
@@ -1029,67 +1011,6 @@ impl Filter<Call> for BaseFilter {
         }
     }
 }*/
-
-/*
-parameter_types! {
-	pub const MaxSessionKeysPerAccount: u16 = 10;
-	pub const BaseSessionKeyBond: Balance = 1 * DOLLARS;
-}
-
-pub struct SessionKeysProxyFilter;
-impl Default for SessionKeysProxyFilter { fn default() -> Self { Self } }
-impl Filter<Call> for SessionKeysProxyFilter {
-	fn filter(c: &Call) -> bool {
-		match *c {
-			Call::SpaceFollows(..) => true,
-			Call::ProfileFollows(..) => true,
-			Call::Posts(..) => true,
-			Call::Reactions(..) => true,
-			_ => false,
-		}
-	}
-}
-
-impl pallet_session_keys::Config for Runtime {
-	type Event = Event;
-	type Call = Call;
-	type MaxSessionKeysPerAccount = MaxSessionKeysPerAccount;
-	type BaseFilter = SessionKeysProxyFilter;
-	type BaseSessionKeyBond = BaseSessionKeyBond;
-}
-
-impl pallet_donations::Config for Runtime {
-	type Event = Event;
-}
-
-parameter_types! {
-	pub const DefaultAutoblockThreshold: u16 = 20;
-}
-
-impl pallet_moderation::Config for Runtime {
-	type Event = Event;
-	type DefaultAutoblockThreshold = DefaultAutoblockThreshold;
-}
-
-parameter_types! {
-	pub const DailyPeriodInBlocks: BlockNumber = DAYS;
-	pub const WeeklyPeriodInBlocks: BlockNumber = DAYS * 7;
-	pub const MonthlyPeriodInBlocks: BlockNumber = DAYS * 30;
-	pub const QuarterlyPeriodInBlocks: BlockNumber = DAYS * 30 * 3;
-	pub const YearlyPeriodInBlocks: BlockNumber = DAYS * 365;
-}
-
-impl pallet_subscriptions::Config for Runtime {
-	type Event = Event;
-	type Subscription = Call;
-	type Scheduler = Scheduler;
-	type DailyPeriodInBlocks = DailyPeriodInBlocks;
-	type WeeklyPeriodInBlocks = WeeklyPeriodInBlocks;
-	type MonthlyPeriodInBlocks = MonthlyPeriodInBlocks;
-	type QuarterlyPeriodInBlocks = QuarterlyPeriodInBlocks;
-	type YearlyPeriodInBlocks = YearlyPeriodInBlocks;
-}
-*/
 
 impl pallet_faucets::Config for Runtime {
 	type Event = Event;
@@ -1144,7 +1065,6 @@ construct_runtime!(
 		ProfileHistory: pallet_profile_history::{Module, Storage},
 		Reactions: pallet_reactions::{Module, Call, Storage, Event<T>},
 		Roles: pallet_roles::{Module, Call, Storage, Event<T>},
-		Scores: pallet_scores::{Module, Call, Storage, Event<T>},
 		SpaceFollows: pallet_space_follows::{Module, Call, Storage, Event<T>},
 		SpaceHistory: pallet_space_history::{Module, Storage},
 		SpaceOwnership: pallet_space_ownership::{Module, Call, Storage, Event<T>},
