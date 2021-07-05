@@ -1176,7 +1176,6 @@ dependencies = [
  "frame-support",
  "frame-system",
  "pallet-balances",
- "pallet-moderation",
  "pallet-permissions",
  "pallet-post-history",
  "pallet-posts",
@@ -1185,7 +1184,6 @@ dependencies = [
  "pallet-profiles",
  "pallet-reactions",
  "pallet-roles",
- "pallet-scores",
  "pallet-space-follows",
  "pallet-space-history",
  "pallet-space-ownership",
@@ -3878,21 +3876,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pallet-donations"
-version = "0.7.0"
-dependencies = [
- "frame-support",
- "frame-system",
- "pallet-permissions",
- "pallet-posts",
- "pallet-spaces",
- "pallet-utils",
- "parity-scale-codec",
- "sp-runtime",
- "sp-std",
-]
-
-[[package]]
 name = "pallet-elections-phragmen"
 version = "3.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3995,30 +3978,6 @@ dependencies = [
  "frame-system",
  "parity-scale-codec",
  "serde",
- "sp-io",
- "sp-runtime",
- "sp-std",
-]
-
-[[package]]
-name = "pallet-moderation"
-version = "0.7.0"
-dependencies = [
- "df-traits",
- "frame-support",
- "frame-system",
- "pallet-balances",
- "pallet-permissions",
- "pallet-posts",
- "pallet-profiles",
- "pallet-roles",
- "pallet-space-follows",
- "pallet-spaces",
- "pallet-timestamp",
- "pallet-utils",
- "parity-scale-codec",
- "serde",
- "sp-core",
  "sp-io",
  "sp-runtime",
  "sp-std",
@@ -4264,25 +4223,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pallet-scores"
-version = "0.7.0"
-dependencies = [
- "frame-support",
- "frame-system",
- "pallet-posts",
- "pallet-profile-follows",
- "pallet-profiles",
- "pallet-reactions",
- "pallet-space-follows",
- "pallet-spaces",
- "pallet-utils",
- "parity-scale-codec",
- "sp-core",
- "sp-runtime",
- "sp-std",
-]
-
-[[package]]
 name = "pallet-session"
 version = "3.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4427,23 +4367,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
-]
-
-[[package]]
-name = "pallet-subscriptions"
-version = "0.7.0"
-dependencies = [
- "frame-support",
- "frame-system",
- "pallet-permissions",
- "pallet-spaces",
- "pallet-sudo",
- "pallet-utils",
- "parity-scale-codec",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-std",
 ]
 
 [[package]]
@@ -8150,7 +8073,6 @@ dependencies = [
  "pallet-recovery",
  "pallet-roles",
  "pallet-scheduler",
- "pallet-scores",
  "pallet-session",
  "pallet-session-benchmarking",
  "pallet-space-follows",
