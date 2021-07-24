@@ -161,15 +161,20 @@ decl_storage! {
         /// The next post id.
         pub NextPostId get(fn next_post_id): PostId = FIRST_POST_ID;
 
-        pub PostById get(fn post_by_id): map hasher(twox_64_concat) PostId => Option<Post<T>>;
+        /// Get the details of a post by its' id.
+        pub PostById get(fn post_by_id):
+            map hasher(twox_64_concat) PostId => Option<Post<T>>;
 
+        /// Get the ids of all direct replies by their parent's post id.
         pub ReplyIdsByPostId get(fn reply_ids_by_post_id):
             map hasher(twox_64_concat) PostId => Vec<PostId>;
 
+        /// Get the ids of all posts in a given space, by the space's id.
         pub PostIdsBySpaceId get(fn post_ids_by_space_id):
             map hasher(twox_64_concat) SpaceId => Vec<PostId>;
 
         // TODO rename 'Shared...' to 'Sharing...'
+        /// Get the ids of all posts that have shared a given original post id.
         pub SharedPostIdsByOriginalPostId get(fn shared_post_ids_by_original_post_id):
             map hasher(twox_64_concat) PostId => Vec<PostId>;
     }
