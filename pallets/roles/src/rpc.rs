@@ -33,9 +33,15 @@ impl<T: Trait> Module<T> {
 
     pub fn get_space_ids_for_account_with_any_role(account_id: T::AccountId) -> Vec<SpaceId> {
         let user = &User::Account(account_id);
+        let mut space_ids = Vec::new();
 
         RoleIdsByUserInSpace::<T>::iter_prefix(user)
-            .map(|(space_id, _)| space_id)
-            .collect()
+            .for_each(|(space_id, role_ids)| {
+                if !role_ids.is_empty() {
+                    space_ids.push(space_id);
+                }
+            });
+
+        space_ids
     }
 }

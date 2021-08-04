@@ -150,6 +150,7 @@ decl_storage! {
         /// The next space id.
         pub NextSpaceId get(fn next_space_id): SpaceId = RESERVED_SPACE_COUNT + 1;
 
+        /// Get the details of a space by its' id.
         pub SpaceById get(fn space_by_id) build(|config: &GenesisConfig<T>| {
           let mut spaces: Vec<(SpaceId, Space<T>)> = Vec::new();
           let endowed_account = config.endowed_account.clone();
@@ -160,9 +161,12 @@ decl_storage! {
         }):
             map hasher(twox_64_concat) SpaceId => Option<Space<T>>;
 
+        /// Find a given space id by its' unique handle.
+        /// If a handle is not registered, nothing will be returned (`None`).
         pub SpaceIdByHandle get(fn space_id_by_handle):
             map hasher(blake2_128_concat) Vec<u8> => Option<SpaceId>;
 
+        /// Find the ids of all spaces owned, by a given account.
         pub SpaceIdsByOwner get(fn space_ids_by_owner):
             map hasher(twox_64_concat) T::AccountId => Vec<SpaceId>;
     }
@@ -577,7 +581,7 @@ impl<T: Trait> Module<T> {
                         // Change the current handle to a new one
 
                         // Validate data first
-                        let old_handle_lc = Utils::<T>::lowercase_handle(old_handle.clone());
+                        let old_handle_lc = Utils::<T>::lowercase_handle(old_handle);
                         let new_handle_lc = Self::lowercase_and_ensure_unique_handle(new_handle)?;
 
                         // Update storage once data is valid
@@ -587,12 +591,12 @@ impl<T: Trait> Module<T> {
                     }
                 } else {
                     // Unreserve the current handle
-                    Self::unreserve_handle(space, old_handle.clone())?;
+                    Self::unreserve_handle(space, old_handle)?;
                     is_handle_updated = true;
                 }
             } else if let Some(new_handle) = new_handle_opt {
                 // Reserve a handle for the space that has no handle yet
-                Self::reserve_handle(space, new_handle.clone())?;
+                Self::reserve_handle(space, new_handle)?;
                 is_handle_updated = true;
             }
         }
