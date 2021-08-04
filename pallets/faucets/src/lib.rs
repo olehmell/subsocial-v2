@@ -15,7 +15,7 @@
 use codec::{Decode, Encode};
 use frame_support::{
     decl_error, decl_event, decl_module, decl_storage,
-    dispatch::{DispatchError, DispatchResult},
+    dispatch::{DispatchError, DispatchResult, DispatchResultWithPostInfo},
     ensure,
     traits::{Currency, ExistenceRequirement, Get},
     weights::Pays,
@@ -105,12 +105,13 @@ decl_error! {
         FaucetDisabled,
         NotFaucetOwner,
         RecipientEqualsFaucet,
+        DripLimitCannotExceedPeriodLimit,
 
         ZeroPeriodProvided,
         ZeroPeriodLimitProvided,
         ZeroDripLimitProvided,
         ZeroDripAmountProvided,
-        
+
         PeriodLimitReached,
         DripLimitReached,
     }
@@ -138,6 +139,7 @@ decl_module! {
             Self::ensure_period_not_zero(period)?;
             Self::ensure_period_limit_not_zero(period_limit)?;
             Self::ensure_drip_limit_not_zero(drip_limit)?;
+            Self::ensure_drip_limit_lte_period_limit(drip_limit, period_limit)?;
 
             ensure!(
                 Self::faucet_by_account(&faucet).is_none(),
@@ -203,6 +205,8 @@ decl_module! {
                 Self::ensure_period_limit_not_zero(period_limit)?;
 
                 if period_limit != settings.period_limit {
+                    Self::ensure_drip_limit_lte_period_limit(settings.drip_limit, period_limit)?;
+
                     settings.period_limit = period_limit;
                     should_update = true;
                 }
@@ -212,6 +216,8 @@ decl_module! {
                 Self::ensure_drip_limit_not_zero(drip_limit)?;
 
                 if drip_limit != settings.drip_limit {
+                    Self::ensure_drip_limit_lte_period_limit(drip_limit, settings.period_limit)?;
+
                     settings.drip_limit = drip_limit;
                     should_update = true;
                 }
@@ -243,18 +249,12 @@ decl_module! {
             Ok(())
         }
 
-        #[weight = (
-            50_000 + T::DbWeight::get().reads_writes(2, 2),
-            
-            // TODO Replace with Ok(Pays::No.into())
-            // See https://github.com/substrate-developer-hub/substrate-node-template/commit/6546b15634bf088e8faee806b5cf266621412889#diff-657cb55f3d39058f730b46f7c84f90698ad43b3ab5c1aa8789a435a230c77f19R106
-            Pays::No
-        )]
+        #[weight = 50_000 + T::DbWeight::get().reads_writes(3, 1)]
         pub fn drip(
             origin, // Should be a faucet account
             recipient: T::AccountId,
             amount: BalanceOf<T>,
-        ) -> DispatchResult {
+        ) -> DispatchResultWithPostInfo {
             let faucet = ensure_signed(origin)?;
 
             // Validate input values
@@ -295,7 +295,7 @@ decl_module! {
             FaucetByAccount::<T>::insert(&faucet, settings);
 
             Self::deposit_event(RawEvent::Dripped(faucet, recipient, amount));
-            Ok(())
+            Ok(Pays::No.into())
         }
     }
 }
@@ -318,6 +318,11 @@ impl<T: Trait> Module<T> {
 
     fn ensure_drip_limit_not_zero(drip_limit: BalanceOf<T>) -> DispatchResult {
         ensure!(drip_limit > Zero::zero(), Error::<T>::ZeroDripLimitProvided);
+        Ok(())
+    }
+
+    fn ensure_drip_limit_lte_period_limit(drip_limit: BalanceOf<T>, period_limit: BalanceOf<T>) -> DispatchResult {
+        ensure!(drip_limit <= period_limit, Error::<T>::DripLimitCannotExceedPeriodLimit);
         Ok(())
     }
 }
