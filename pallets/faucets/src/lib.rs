@@ -15,7 +15,7 @@
 use codec::{Decode, Encode};
 use frame_support::{
     decl_error, decl_event, decl_module, decl_storage,
-    dispatch::{DispatchError, DispatchResult},
+    dispatch::{DispatchError, DispatchResult, DispatchResultWithPostInfo},
     ensure,
     traits::{Currency, ExistenceRequirement, Get},
     weights::Pays,
@@ -252,18 +252,12 @@ decl_module! {
             Ok(())
         }
 
-        #[weight = (
-            50_000 + T::DbWeight::get().reads_writes(2, 2),
-            
-            // TODO Replace with Ok(Pays::No.into())
-            //  - See https://github.com/substrate-developer-hub/substrate-node-template/commit/6546b15634bf088e8faee806b5cf266621412889#diff-657cb55f3d39058f730b46f7c84f90698ad43b3ab5c1aa8789a435a230c77f19R106
-            Pays::No
-        )]
+        #[weight = 50_000 + T::DbWeight::get().reads_writes(3, 1)]
         pub fn drip(
             origin, // Should be a faucet account
             recipient: T::AccountId,
             amount: BalanceOf<T>,
-        ) -> DispatchResult {
+        ) -> DispatchResultWithPostInfo {
             let faucet = ensure_signed(origin)?;
 
             // Validate input values
@@ -304,7 +298,7 @@ decl_module! {
             FaucetByAccount::<T>::insert(&faucet, settings);
 
             Self::deposit_event(RawEvent::Dripped(faucet, recipient, amount));
-            Ok(())
+            Ok(Pays::No.into())
         }
     }
 }

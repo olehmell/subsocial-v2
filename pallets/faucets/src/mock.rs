@@ -11,7 +11,7 @@ use frame_support::{
     impl_outer_origin, impl_outer_dispatch, parameter_types,
     assert_ok,
     weights::Weight,
-    dispatch::DispatchResult,
+    dispatch::{DispatchResult, DispatchResultWithPostInfo},
 };
 use frame_system as system;
 
@@ -243,7 +243,7 @@ pub(crate) fn _remove_faucets(
     )
 }
 
-pub(crate) fn _do_default_drip() -> DispatchResult {
+pub(crate) fn _do_default_drip() -> DispatchResultWithPostInfo {
     _drip(None, None, None)
 }
 
@@ -251,7 +251,7 @@ pub(crate) fn _drip(
     origin: Option<Origin>,
     recipient: Option<AccountId>,
     amount: Option<Balance>
-) -> DispatchResult {
+) -> DispatchResultWithPostInfo {
     Faucets::drip(
         origin.unwrap_or_else(|| Origin::signed(FAUCET1)),
         recipient.unwrap_or(ACCOUNT1),
