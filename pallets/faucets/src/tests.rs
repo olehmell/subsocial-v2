@@ -55,7 +55,10 @@ fn add_faucet_should_fail_when_drip_limit_exceeds_period_limit() {
     ExtBuilder::build().execute_with(|| {
         let mut settings = default_faucet();
         settings.drip_limit = settings.period_limit + 1;
-        assert_noop!(_add_faucet(None, None, Some(settings)), Error::<Test>::DripLimitExceedsPeriodLimit);
+        assert_noop!(
+            _add_faucet(None, None, Some(settings)),
+            Error::<Test>::DripLimitCannotExceedPeriodLimit
+        );
     });
 }
 
@@ -188,7 +191,7 @@ fn update_faucet_should_fail_when_new_period_limit_below_drip_limit() {
                     drip_limit: None
                 }
             ),
-            Error::<Test>::NewPeriodLimitBelowDripLimit
+            Error::<Test>::DripLimitCannotExceedPeriodLimit
         );
     });
 }
@@ -201,11 +204,11 @@ fn update_faucet_should_fail_when_new_drip_limit_exceeds_period_limit() {
                 FaucetUpdate {
                     enabled: None,
                     period: None,
-                    period_limit: Some(default_faucet().drip_limit),
-                    drip_limit: Some(default_faucet().drip_limit + 1)
+                    period_limit: None,
+                    drip_limit: Some(default_faucet().period_limit + 1)
                 }
             ),
-            Error::<Test>::DripLimitExceedsPeriodLimit
+            Error::<Test>::DripLimitCannotExceedPeriodLimit
         );
     });
 }

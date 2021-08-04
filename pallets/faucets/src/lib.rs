@@ -105,15 +105,13 @@ decl_error! {
         FaucetDisabled,
         NotFaucetOwner,
         RecipientEqualsFaucet,
+        DripLimitCannotExceedPeriodLimit,
 
         ZeroPeriodProvided,
         ZeroPeriodLimitProvided,
         ZeroDripLimitProvided,
         ZeroDripAmountProvided,
 
-        DripLimitExceedsPeriodLimit,
-        NewPeriodLimitBelowDripLimit,
-        
         PeriodLimitReached,
         DripLimitReached,
     }
@@ -141,7 +139,7 @@ decl_module! {
             Self::ensure_period_not_zero(period)?;
             Self::ensure_period_limit_not_zero(period_limit)?;
             Self::ensure_drip_limit_not_zero(drip_limit)?;
-            ensure!(drip_limit <= period_limit, Error::<T>::DripLimitExceedsPeriodLimit);
+            Self::ensure_drip_limit_lte_period_limit(drip_limit, period_limit)?;
 
             ensure!(
                 Self::faucet_by_account(&faucet).is_none(),
@@ -207,7 +205,7 @@ decl_module! {
                 Self::ensure_period_limit_not_zero(period_limit)?;
 
                 if period_limit != settings.period_limit {
-                    ensure!(settings.drip_limit <= period_limit, Error::<T>::NewPeriodLimitBelowDripLimit);
+                    Self::ensure_drip_limit_lte_period_limit(settings.drip_limit, period_limit)?;
 
                     settings.period_limit = period_limit;
                     should_update = true;
@@ -218,7 +216,7 @@ decl_module! {
                 Self::ensure_drip_limit_not_zero(drip_limit)?;
 
                 if drip_limit != settings.drip_limit {
-                    ensure!(drip_limit <= settings.period_limit, Error::<T>::DripLimitExceedsPeriodLimit);
+                    Self::ensure_drip_limit_lte_period_limit(drip_limit, settings.period_limit)?;
 
                     settings.drip_limit = drip_limit;
                     should_update = true;
@@ -322,6 +320,11 @@ impl<T: Trait> Module<T> {
         ensure!(drip_limit > Zero::zero(), Error::<T>::ZeroDripLimitProvided);
         Ok(())
     }
+
+    fn ensure_drip_limit_lte_period_limit(drip_limit: BalanceOf<T>, period_limit: BalanceOf<T>) -> DispatchResult {
+        ensure!(drip_limit <= period_limit, Error::<T>::DripLimitCannotExceedPeriodLimit);
+        Ok(())
+    }
 }
 
 impl<T: Trait> Faucet<T> {
@@ -337,7 +340,7 @@ impl<T: Trait> Faucet<T> {
             period_limit,
             drip_limit,
 
-            next_period_at: system::Module::<T>::block_number(),
+            next_period_at: Zero::zero(),
             dripped_in_current_period: Zero::zero(),
         }
     }

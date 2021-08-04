@@ -4,7 +4,7 @@ use crate::{Module, Trait, Faucet, FaucetUpdate};
 use sp_core::H256;
 use sp_io::TestExternalities;
 use sp_runtime::{
-    traits::{BlakeTwo256, IdentityLookup}, testing::Header, RuntimeDebug, Perbill, Storage
+    traits::{BlakeTwo256, IdentityLookup, Zero}, testing::Header, RuntimeDebug, Perbill, Storage
 };
 
 use frame_support::{
@@ -176,7 +176,7 @@ pub(crate) fn default_faucet() -> Faucet<Test> {
         period_limit: 50,
         drip_limit: 25,
 
-        next_period_at: System::block_number(),
+        next_period_at: Zero::zero(),
         dripped_in_current_period: 0,
     }
 }
