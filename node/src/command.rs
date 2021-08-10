@@ -52,7 +52,7 @@ impl SubstrateCli for Cli {
             "" => return Err("Please specify which chain you want to run, e.g. --dev or --chain=local".into()),
             "dev" => Box::new(chain_spec::development_config()?),
             "local" => Box::new(chain_spec::local_testnet_config()?),
-            "staging" => Box::new(chain_spec::subsocial_staging_config()?),
+            // "staging" => Box::new(chain_spec::subsocial_staging_config()?),
             "df" => Box::new(chain_spec::subsocial_config()?),
             path => Box::new(chain_spec::ChainSpec::from_json_file(
                 std::path::PathBuf::from(path),
