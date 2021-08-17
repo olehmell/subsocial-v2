@@ -843,7 +843,7 @@ impl pallet_recovery::Config for Runtime {
     type RecoveryDeposit = RecoveryDeposit;
 }
 
-parameter_types! {
+/*parameter_types! {
 	pub const AssetDepositBase: Balance = 100 * DOLLARS;
 	pub const AssetDepositPerZombie: Balance = 1 * DOLLARS;
 	pub const StringLimit: u32 = 50;
@@ -863,7 +863,7 @@ impl pallet_assets::Config for Runtime {
     type MetadataDepositBase = MetadataDepositBase;
     type MetadataDepositPerByte = MetadataDepositPerByte;
     type WeightInfo = pallet_assets::weights::SubstrateWeight<Runtime>;
-}
+}*/
 
 parameter_types! {
 	pub const MinVestedTransfer: Balance = 100 * DOLLARS;
@@ -1051,7 +1051,7 @@ construct_runtime!(
 		Proxy: pallet_proxy::{Module, Call, Storage, Event<T>},
 		Multisig: pallet_multisig::{Module, Call, Storage, Event<T>},
 		Bounties: pallet_bounties::{Module, Call, Storage, Event<T>},
-		Assets: pallet_assets::{Module, Call, Storage, Event<T>},
+		// Assets: pallet_assets::{Module, Call, Storage, Event<T>},
 		Authorship: pallet_authorship::{Module, Call, Storage, Inherent},
 		Indices: pallet_indices::{Module, Call, Storage, Config<T>, Event<T>},
 
@@ -1327,7 +1327,7 @@ impl_runtime_apis! {
 			let mut batches = Vec::<BenchmarkBatch>::new();
 			let params = (&config, &whitelist);
 
-			add_benchmark!(params, batches, pallet_assets, Assets);
+			// add_benchmark!(params, batches, pallet_assets, Assets);
 			add_benchmark!(params, batches, pallet_babe, Babe);
 			add_benchmark!(params, batches, pallet_balances, Balances);
 			add_benchmark!(params, batches, pallet_bounties, Bounties);
