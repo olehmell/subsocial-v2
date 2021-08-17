@@ -72,20 +72,15 @@ fn session_keys(
     SessionKeys { grandpa, babe, im_online, authority_discovery }
 }
 
-fn testnet_endowed_accounts() -> Vec<AccountId> {
-    vec![
-        get_account_id_from_seed::<sr25519::Public>("Alice"),
-        get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
+pub fn development_config() -> Result<ChainSpec, String> {
+    let wasm_binary = WASM_BINARY.ok_or_else(|| "Development wasm not available".to_string())?;
+    let endowed_accounts = vec![
         get_account_id_from_seed::<sr25519::Public>("Bob"),
         get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
         get_account_id_from_seed::<sr25519::Public>("Charlie"),
         get_account_id_from_seed::<sr25519::Public>("Dave"),
         get_account_id_from_seed::<sr25519::Public>("Eve"),
-    ]
-}
-
-pub fn development_config() -> Result<ChainSpec, String> {
-    let wasm_binary = WASM_BINARY.ok_or_else(|| "Development wasm not available".to_string())?;
+    ];
 
     Ok(ChainSpec::from_genesis(
         "Development",
@@ -98,9 +93,9 @@ pub fn development_config() -> Result<ChainSpec, String> {
                 authority_keys_from_seed("Alice"),
             ],
             // Sudo account
-            get_account_id_from_seed::<sr25519::Public>("Alice"),
+            get_account_id_from_seed::<sr25519::Public>("Eve"),
             // Pre-funded accounts
-            testnet_endowed_accounts().iter().cloned().map(|k| (k, 100_000)).collect(),
+            endowed_accounts.iter().cloned().map(|k| (k, 100_000)).collect(),
         ),
         // Bootnodes
         vec![],
@@ -117,6 +112,11 @@ pub fn development_config() -> Result<ChainSpec, String> {
 
 pub fn local_testnet_config() -> Result<ChainSpec, String> {
     let wasm_binary = WASM_BINARY.ok_or_else(|| "Development wasm not available".to_string())?;
+    let endowed_accounts = vec![
+        get_account_id_from_seed::<sr25519::Public>("Charlie"),
+        get_account_id_from_seed::<sr25519::Public>("Dave"),
+        get_account_id_from_seed::<sr25519::Public>("Eve"),
+    ];
 
     Ok(ChainSpec::from_genesis(
         // Name
@@ -132,9 +132,9 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
                 authority_keys_from_seed("Bob"),
             ],
             // Sudo account
-            get_account_id_from_seed::<sr25519::Public>("Alice"),
+            get_account_id_from_seed::<sr25519::Public>("Eve"),
             // Pre-funded accounts
-            testnet_endowed_accounts().iter().cloned().map(|k| (k, 100_000)).collect(),
+            endowed_accounts.iter().cloned().map(|k| (k, 100_000)).collect(),
         ),
         // Bootnodes
         vec![],
