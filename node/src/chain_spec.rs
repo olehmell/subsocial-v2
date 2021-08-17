@@ -1,4 +1,4 @@
-use sp_core::{Pair, Public, sr25519/*, crypto::UncheckedInto*/};
+use sp_core::{Pair, Public, sr25519, crypto::UncheckedInto};
 use subsocial_primitives::Balance;
 use subsocial_runtime::{
     AccountId, GenesisConfig, SessionKeys, StakerStatus,
@@ -19,7 +19,7 @@ use sp_runtime::{
 };
 use sc_service::{ChainType, Properties};
 // use sc_telemetry::TelemetryEndpoints;
-// use hex_literal::hex;
+use hex_literal::hex;
 
 // The URL for the telemetry server.
 // const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
@@ -141,9 +141,9 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
         // Telemetry
         None,
         // Protocol ID
-        None,
+        Some(DEFAULT_PROTOCOL_ID),
         // Properties
-        None,
+        Some(subsocial_properties()),
         // Extensions
         None,
     ))
@@ -157,76 +157,49 @@ pub fn subsocial_staging_testnet_config() -> Result<ChainSpec, String> {
     ChainSpec::from_json_bytes(&include_bytes!("../res/staging.json")[..])
 }
 
-/*pub fn subsocial_staging_config() -> Result<ChainSpec, String> {
+pub fn subsocial_staging_config() -> Result<ChainSpec, String> {
     let wasm_binary = WASM_BINARY.ok_or_else(|| "Staging wasm binary not available".to_string())?;
 
     Ok(ChainSpec::from_genesis(
-        "Subsocial",
+        "Subsocial-Staging",
         "subsocial",
         ChainType::Live,
         move || testnet_genesis(
             wasm_binary,
             vec![
                 (
-                    /* AuraId SR25519 */
-                    hex!["ac940b8ee399d42faeb7169f322e6623f8219d12ad4c42dfe0995fa9f9713a0d"].unchecked_into(),
-                    /* GrandpaId ED25519 */
-                    hex!["e97b51af33429b5c4ab8ddd9b3fc542d24154bbeef807d559eff3906afca8413"].unchecked_into()
-                ),
-                (
-                    /* AuraId SR25519 */
-                    hex!["0c053087dd7782de467228b5f826c5031be2faf315baa766a89b48bb6e2dfb71"].unchecked_into(),
-                    /* GrandpaId ED25519 */
-                    hex!["b48a83ed87ef39bc90c205fb551af3c076e1a952881d7fefec08cbb76e17ab8b"].unchecked_into()
+                    //5HHJDXTAre66UuHqx9vHU1L55BL1eYCdcSrW6UqCs3wLpALJ (Stash)
+                    hex!["e6c7c6e02890bd7d762dadc7bf2b2bfd28931ae51b48780399f78950a477c760"].into(),
+                    //5FxaTpL41CUYcgGDN2KtyVVxKxsTnZuk6Rdv72mBq9JCHKzC (Controller)
+                    hex!["ac44922ae8bc22a330e3f24930eac35d3f1dba435b28c79564ba1569a4094d4b"].into(),
+                    //5EdyW51GA5qcseQ86gW5j8uFf2TMcaz2z5qf27WSUk3dx1YS (GrandpaId)
+                    hex!["71d83b01f2ffe5a0b44b1056c3bb6e3c537f6d9588a0342d3de6fae4b2c16442"].unchecked_into(),
+                    //5HHJDXTAre66UuHqx9vHU1L55BL1eYCdcSrW6UqCs3wLpALJ (BabeId)
+                    hex!["e6c7c6e02890bd7d762dadc7bf2b2bfd28931ae51b48780399f78950a477c760"].unchecked_into(),
+                    //5EtLFxUfgKFYXSttrRtgSucLUuzhrvgixiaK6sjvYwyKMp3y (ImOnlineId)
+                    hex!["7ccb8a1469f64cdd8aeed9f48376dc60b021bfc65d3a2f8d3a12c8b6ee77ab45"].unchecked_into(),
+                    //5DXcYMa34ZJfACVqETL9JCa9Epe6TS448aZPc179BfUtUpzd (AuthorityDiscoveryId)
+                    hex!["40c1f708806e670825eaeb725509e9a594d58d430f58d691d0591def9b40316e"].unchecked_into(),
                 ),
             ],
             /* Sudo Account */
-            hex!["24d6d7cd9a0500be768efc7b5508e7861cbde7cfc06819e4dfd9120b97d46d3e"].into(),
+            hex!["ce7035e9f36c57ac8c3cc016b150ee5d36da10c4417c45e30c62c2f627f19d36"].into(),
             vec![
                 (
                     /* Sudo Account */
-                    hex!["24d6d7cd9a0500be768efc7b5508e7861cbde7cfc06819e4dfd9120b97d46d3e"].into(),
+                    hex!["ce7035e9f36c57ac8c3cc016b150ee5d36da10c4417c45e30c62c2f627f19d36"].into(),
                     /* Balance */
                     1_000
                 ),
-                (
-                    /* Account X1 */
-                    hex!["24d6d996a8bb42a63904afc36d610986e8d502f65898da62cb281cfe7f23b02f"].into(),
-                    /* Balance */
-                    2_499_000
-                ),
-                (
-                    /* Account X2 */
-                    hex!["24d6d8fc5d051fd471e275f14c83e95287d2b863e4cc802de1f78dea06c6ca78"].into(),
-                    /* Balance */
-                    2_500_000
-                ),
-                (
-                    /* Account X3 */
-                    hex!["24d6d901fb0531124040630e52cfd746ef7d037922c4baf290f513dbc3d47d66"].into(),
-                    /* Balance */
-                    2_500_000
-                ),
-                (
-                    /* Account X4 */
-                    hex!["24d6d22d63313e82f9461281cb69aacad1828dc74273274751fd24333b182c68"].into(),
-                    /* Balance */
-                    2_500_000
-                ),
             ],
-            // Treasury
-            hex!["24d6d683750c4c10e90dd81430efec95133e1ec1f5be781d3267390d03174706"].into(),
-            true,
         ),
         vec![],
-        Some(TelemetryEndpoints::new(
-            vec![(STAGING_TELEMETRY_URL.to_string(), 0)]
-        ).expect("Staging telemetry url is valid; qed")),
+        None,
         Some(DEFAULT_PROTOCOL_ID),
         Some(subsocial_properties()),
         None,
     ))
-}*/
+}
 
 fn testnet_genesis(
     wasm_binary: &[u8],
@@ -252,7 +225,11 @@ fn testnet_genesis(
         }),
         pallet_balances: Some(BalancesConfig {
             // Configure endowed accounts with initial balance of 1 << 60.
-            balances: endowed_accounts.iter().cloned().map(|(k, b)|(k, b * DOLLARS)).collect(),
+            balances: endowed_accounts.iter().cloned().map(|(k, b)|(k, b * DOLLARS))
+                .chain(
+                    initial_authorities.iter().map(|x| (x.0.clone(), STASH))
+                )
+                .collect(),
         }),
         pallet_indices: Default::default(),
         pallet_babe: Default::default(),
