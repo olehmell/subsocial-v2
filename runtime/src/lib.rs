@@ -1017,6 +1017,10 @@ impl pallet_faucets::Config for Runtime {
 	type Currency = Balances;
 }
 
+impl pallet_tips::Config for Runtime {
+    type Event = Event;
+}
+
 construct_runtime!(
 	pub enum Runtime where
 		Block = Block,
@@ -1074,6 +1078,7 @@ construct_runtime!(
 		// New experimental pallets. Not recommended to use in production yet.
 
 		Faucets: pallet_faucets::{Module, Call, Storage, Event<T>},
+        Tips: pallet_tips::{Module, Call, Storage, Event<T>},
 	}
 );
 

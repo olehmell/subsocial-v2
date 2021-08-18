@@ -41,6 +41,7 @@ pallet-space-history = { default-features = false, path = '../pallets/space-hist
 pallet-space-ownership = { default-features = false, path = '../pallets/space-ownership' }
 pallet-spaces = { default-features = false, path = '../pallets/spaces' }
 
+pallet-tips = { default-features = false, path = '../pallets/tips' }
 pallet-utils = { default-features = false, path = '../pallets/utils' }
 
 # Custom Runtime APIs
@@ -203,6 +204,7 @@ std = [
     'pallet-space-history/std',
     'pallet-space-ownership/std',
     'pallet-spaces/std',
+    'pallet-tips/std',
     'pallet-utils/std',
     'posts-runtime-api/std',
     'profile-follows-runtime-api/std',
