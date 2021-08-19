@@ -208,7 +208,7 @@ fn testnet_genesis(
     root_key: AccountId,
     endowed_accounts: Vec<(AccountId, u128)>,
 ) -> GenesisConfig {
-    const STASH: Balance = 100 * DOLLARS;
+    const STASH: Balance = 10 * DOLLARS;
     let num_endowed_accounts = endowed_accounts.len();
 
     GenesisConfig {
