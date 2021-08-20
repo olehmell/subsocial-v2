@@ -42,15 +42,15 @@ pub mod pallet {
     pub enum Event<T: Config> {
         /// Tip from Account to owner of post with optional comment
         /// parameters. [fromAccount, toPostId, amount, Option<CommentId>]
-        TipToPost(T::AccountId, PostId, BalanceOf<T>, Option<PostId>),
+        PostTipped(T::AccountId, PostId, BalanceOf<T>, Option<PostId>),
 
         /// Tip from Account to owner of space with optional comment
         /// parameters. [fromAccount, toSpaceId, amount, Option<CommentId>]
-        TipToSpace(T::AccountId, SpaceId, BalanceOf<T>, Option<PostId>),
+        SpaceTipped(T::AccountId, SpaceId, BalanceOf<T>, Option<PostId>),
 
         /// Tip from Account to another Account with optional comment
         /// parameters. [fromAccount, toAccount, amount, Option<CommentId>]
-        TipToAccount(T::AccountId, T::AccountId, BalanceOf<T>, Option<PostId>),
+        AccountTipped(T::AccountId, T::AccountId, BalanceOf<T>, Option<PostId>),
     }
 
     // Errors inform users that something went wrong.
@@ -90,7 +90,7 @@ pub mod pallet {
             }
 
             // Emit an event.
-            Self::deposit_event(Event::TipToPost(from_account, post_id, amount, None));
+            Self::deposit_event(Event::PostTipped(from_account, post_id, amount, None));
             // Return a successful DispatchResultWithPostInfo
             Ok(().into())
         }
@@ -107,14 +107,19 @@ pub mod pallet {
             let to_account = space.owner;
 
             // transfer
-            <T as pallet_utils::Config>::Currency::transfer(&from_account, &to_account, amount, ExistenceRequirement::KeepAlive)?;
+            <T as pallet_utils::Config>::Currency::transfer(
+                &from_account,
+                &to_account,
+                amount,
+                ExistenceRequirement::KeepAlive
+            )?;
 
             if let Some(_content) = content_opt {
                 // TODO: create comment here
             }
 
             // Emit an event.
-            Self::deposit_event(Event::TipToSpace(from_account, space_id, amount, None));
+            Self::deposit_event(Event::SpaceTipped(from_account, space_id, amount, None));
             // Return a successful DispatchResultWithPostInfo
             Ok(().into())
         }
@@ -134,7 +139,7 @@ pub mod pallet {
             }
 
             // Emit an event.
-            Self::deposit_event(Event::TipToAccount(from_account, to_account, amount, None));
+            Self::deposit_event(Event::AccountTipped(from_account, to_account, amount, None));
             // Return a successful DispatchResultWithPostInfo
             Ok(().into())
         }
