@@ -9,11 +9,11 @@ use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_finality_grandpa::AuthorityId as GrandpaId;
 use sp_runtime::traits::{Verify, IdentifyAccount};
 use sc_service::{ChainType, Properties};
-use sc_telemetry::TelemetryEndpoints;
+// use sc_telemetry::TelemetryEndpoints;
 use hex_literal::hex;
 
 // The URL for the telemetry server.
-const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
+// const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
 const DEFAULT_PROTOCOL_ID: &str = "sub";
 
 /// Specialized `ChainSpec`. This is a specialization of the general Substrate ChainSpec type.
