@@ -4,7 +4,7 @@ use super::*;
 use sp_core::H256;
 use sp_io::TestExternalities;
 use sp_runtime::{
-    traits::{BlakeTwo256, IdentityLookup, Zero}, testing::Header, RuntimeDebug, Perbill, Storage
+    traits::{BlakeTwo256, IdentityLookup, Zero}, testing::Header, Storage
 };
 
 use crate as faucets;
@@ -12,7 +12,6 @@ use crate as faucets;
 use frame_support::{
     parameter_types,
     assert_ok,
-    weights::Weight,
     dispatch::{DispatchResult, DispatchResultWithPostInfo},
 };
 use frame_system as system;
