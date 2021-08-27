@@ -21,9 +21,7 @@ std = [
     'sp-std/std',
     'frame-support/std',
     'frame-system/std',
-    'pallet-timestamp/std',
     'pallet-balances/std',
-    'pallet-utils/std',
 ]
 
 [dependencies]
@@ -36,9 +34,6 @@ pallet-balances = { default-features = false, version = '3.0.0' }
 pallet-timestamp = { default-features = false, version = '3.0.0' }
 sp-runtime = { default-features = false, version = '3.0.0' }
 sp-std = { default-features = false, version = '3.0.0' }
-
-# Local dependencies
-pallet-utils = { default-features = false, path = '../utils' }
 
 [dev-dependencies]
 serde = { version = '1.0.119' }

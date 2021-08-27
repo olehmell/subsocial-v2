@@ -4,7 +4,7 @@ use super::*;
 use sp_core::H256;
 use sp_io::TestExternalities;
 use sp_runtime::{
-    traits::{BlakeTwo256, IdentityLookup}, testing::Header, Storage
+    traits::{BlakeTwo256, IdentityLookup, Zero}, testing::Header, RuntimeDebug, Perbill, Storage
 };
 
 use crate as faucets;
@@ -12,7 +12,8 @@ use crate as faucets;
 use frame_support::{
     parameter_types,
     assert_ok,
-    dispatch::DispatchResult,
+    weights::Weight,
+    dispatch::{DispatchResult, DispatchResultWithPostInfo},
 };
 use frame_system as system;
 
@@ -186,14 +187,14 @@ pub(crate) const ACCOUNT1: AccountId = 11;
 
 pub(crate) const INITIAL_BLOCK_NUMBER: BlockNumber = 20;
 
-pub(crate) const fn default_faucet() -> Faucet<Test> {
+pub(crate) fn default_faucet() -> Faucet<Test> {
     Faucet {
         enabled: true,
         period: 100,
         period_limit: 50,
         drip_limit: 25,
 
-        next_period_at: 0,
+        next_period_at: Zero::zero(),
         dripped_in_current_period: 0,
     }
 }
@@ -208,14 +209,15 @@ pub(crate) const fn default_faucet_update() -> FaucetUpdate<BlockNumber, Balance
 }
 
 pub(crate) fn _add_default_faucet() -> DispatchResult {
-    _add_faucet(None, None)
+    _add_faucet(None, None, None)
 }
 
 pub(crate) fn _add_faucet(
     origin: Option<Origin>,
     faucet_account: Option<AccountId>,
+    settings_opt: Option<Faucet<Test>>,
 ) -> DispatchResult {
-    let settings =  default_faucet();
+    let settings = settings_opt.unwrap_or_else(default_faucet);
     Faucets::add_faucet(
         origin.unwrap_or_else(Origin::root),
         faucet_account.unwrap_or(FAUCET1),
@@ -259,7 +261,7 @@ pub(crate) fn _remove_faucets(
     )
 }
 
-pub(crate) fn _do_default_drip() -> DispatchResult {
+pub(crate) fn _do_default_drip() -> DispatchResultWithPostInfo {
     _drip(None, None, None)
 }
 
@@ -267,7 +269,7 @@ pub(crate) fn _drip(
     origin: Option<Origin>,
     recipient: Option<AccountId>,
     amount: Option<Balance>
-) -> DispatchResult {
+) -> DispatchResultWithPostInfo {
     Faucets::drip(
         origin.unwrap_or_else(|| Origin::signed(FAUCET1)),
         recipient.unwrap_or(ACCOUNT1),
