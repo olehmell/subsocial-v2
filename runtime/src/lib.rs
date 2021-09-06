@@ -434,6 +434,15 @@ impl pallet_spaces::Config for Runtime {
 	type HandleDeposit = HandleDeposit;
 }
 
+parameter_types! {
+    pub InitialClaimAmount: Balance = 10 * DOLLARS;
+}
+
+impl pallet_claims::Config for Runtime {
+    type Event = Event;
+    type InitialClaimAmount = InitialClaimAmount;
+}
+
 parameter_types! {}
 
 impl pallet_space_history::Config for Runtime {}
@@ -553,6 +562,7 @@ construct_runtime!(
 		// New experimental pallets. Not recommended to use in production yet.
 
 		Faucets: pallet_faucets::{Module, Call, Storage, Event<T>},
+        Claims: pallet_claims::{Module, Call, Storage, Event<T>},
 		// SessionKeys: pallet_session_keys::{Module, Call, Storage, Event<T>},
 		// Moderation: pallet_moderation::{Module, Call, Storage, Event<T>},
 		// Donations: pallet_donations::{Module, Call, Storage, Event<T>},
