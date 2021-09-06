@@ -114,7 +114,7 @@ impl Content {
     }
 }
 
-type BalanceOf<T> = <<T as Config>::Currency as Currency<<T as system::Config>::AccountId>>::Balance;
+pub type BalanceOf<T> = <<T as Config>::Currency as Currency<<T as system::Config>::AccountId>>::Balance;
 
 pub trait Config: system::Config + pallet_timestamp::Config
 {
