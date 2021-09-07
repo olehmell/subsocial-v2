@@ -997,11 +997,13 @@ impl pallet_spaces::Config for Runtime {
 
 parameter_types! {
     pub InitialClaimAmount: Balance = 10 * DOLLARS;
+    pub AccountsSetLimit: u16 = 30000;
 }
 
 impl pallet_claims::Config for Runtime {
     type Event = Event;
     type InitialClaimAmount = InitialClaimAmount;
+    type AccountsSetLimit = AccountsSetLimit;
 }
 
 parameter_types! {}
