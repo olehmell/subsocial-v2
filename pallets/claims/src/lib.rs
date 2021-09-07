@@ -148,27 +148,30 @@ pub mod pallet {
             Ok(().into())
         }
     }
+
+    impl<T: Config> Pallet<T> {
+        pub(super) fn prevalidate_tokens_claim(who: &T::AccountId) -> DispatchResultWithPostInfo {
+            ensure!(Self::eligible_claim_account(who), Error::<T>::AccountNotEligible);
+            ensure!(!Self::claim_by_account(who).is_zero(), Error::<T>::TokensAlreadyClaimed);
+            Ok(().into())
+        }
+    }
 }
 
-#[repr(u8)]
-enum ValidityError {
-    UserNotPermitted = 0,
-}
-
-/// Validate `attest` calls prior to execution. Needed to avoid a DoS attack since they are
+/// Validate `tokens_claim` calls prior to execution. Needed to avoid a DoS attack since they are
 /// otherwise free to place on chain.
 #[derive(Encode, Decode, Clone, Eq, PartialEq)]
-pub struct PrevalidateAttests<T: Config + Send + Sync>(sp_std::marker::PhantomData<T>)
+pub struct PrevalidateTokenClaim<T: Config + Send + Sync>(sp_std::marker::PhantomData<T>)
     where
         <T as frame_system::Config>::Call: IsSubType<Call<T>>;
 
-impl<T: Config + Send + Sync> Debug for PrevalidateAttests<T>
+impl<T: Config + Send + Sync> Debug for PrevalidateTokenClaim<T>
     where
         <T as frame_system::Config>::Call: IsSubType<Call<T>>,
 {
     #[cfg(feature = "std")]
     fn fmt(&self, f: &mut sp_std::fmt::Formatter) -> sp_std::fmt::Result {
-        write!(f, "PrevalidateAttests")
+        write!(f, "PrevalidateTokenClaim")
     }
 
     #[cfg(not(feature = "std"))]
@@ -177,7 +180,7 @@ impl<T: Config + Send + Sync> Debug for PrevalidateAttests<T>
     }
 }
 
-impl<T: Config + Send + Sync> PrevalidateAttests<T>
+impl<T: Config + Send + Sync> PrevalidateTokenClaim<T>
     where
         <T as frame_system::Config>::Call: IsSubType<Call<T>>,
 {
@@ -187,7 +190,18 @@ impl<T: Config + Send + Sync> PrevalidateAttests<T>
     }
 }
 
-impl<T: Config + Send + Sync> SignedExtension for PrevalidateAttests<T>
+#[repr(u8)]
+enum ValidityError {
+    NotAllowedToClaim = 0,
+}
+
+impl From<ValidityError> for u8 {
+    fn from(err: ValidityError) -> Self {
+        err as u8
+    }
+}
+
+impl<T: Config + Send + Sync> SignedExtension for PrevalidateTokenClaim<T>
     where
         <T as frame_system::Config>::Call: IsSubType<Call<T>>,
 {
@@ -195,7 +209,7 @@ impl<T: Config + Send + Sync> SignedExtension for PrevalidateAttests<T>
     type Call = <T as frame_system::Config>::Call;
     type AdditionalSigned = ();
     type Pre = ();
-    const IDENTIFIER: &'static str = "PrevalidateAttests";
+    const IDENTIFIER: &'static str = "PrevalidateTokenClaim";
 
     fn additional_signed(&self) -> Result<Self::AdditionalSigned, TransactionValidityError> {
         Ok(())
@@ -212,10 +226,9 @@ impl<T: Config + Send + Sync> SignedExtension for PrevalidateAttests<T>
         _len: usize,
     ) -> TransactionValidity {
         if let Some(local_call) = call.is_sub_type() {
-            if let Call::tokens_claim(_) = local_call {
-                if let Err(_) = Pallet::<T>::prevalidate_tokens_claim(&who) {
-                    return Err(ValidityError::UserNotPermitted.into())
-                }
+            if let Call::tokens_claim() = local_call {
+                Pallet::<T>::prevalidate_tokens_claim(who)
+                    .map_err(|_| InvalidTransaction::Custom(ValidityError::NotAllowedToClaim.into()))?;
             }
         }
         Ok(ValidTransaction::default())
