@@ -53,7 +53,7 @@ pub mod pallet {
 
     #[pallet::storage]
     #[pallet::getter(fn eligible_claim_account)]
-    pub(super) type EligibleClaimAccount<T: Config> = StorageMap<_, Blake2_128Concat, T::AccountId, bool, ValueQuery>;
+    pub(super) type EligibleClaimAccounts<T: Config> = StorageMap<_, Blake2_128Concat, T::AccountId, bool, ValueQuery>;
 
     #[pallet::storage]
     #[pallet::getter(fn rewards_account)]
@@ -93,7 +93,8 @@ pub mod pallet {
         pub fn tokens_claim(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
 
-            Self::prevalidate_tokens_claim(&who)?;
+            ensure!(Self::eligible_claim_account(&who), Error::<T>::AccountNotEligible);
+            ensure!(!Self::claim_by_account(&who).is_zero(), Error::<T>::TokensAlreadyClaimed);
 
             let rewards_account;
 
@@ -114,7 +115,7 @@ pub mod pallet {
         }
 
         #[pallet::weight(10_000 + T::DbWeight::get().writes(1))]
-        pub fn add_reward_account(origin: OriginFor<T>, reward_account: T::AccountId) -> DispatchResultWithPostInfo {
+        pub fn set_rewards_account(origin: OriginFor<T>, reward_account: T::AccountId) -> DispatchResultWithPostInfo {
             ensure_root(origin)?;
 
             ensure!(
@@ -130,18 +131,18 @@ pub mod pallet {
         }
 
         #[pallet::weight(10_000 + T::DbWeight::get().writes(1))]
-        pub fn add_eligible_claim_account(origin: OriginFor<T>, eligible_claim_accounts: Vec<T::AccountId>) -> DispatchResultWithPostInfo {
+        pub fn add_eligible_claim_accounts(origin: OriginFor<T>, eligible_claim_accounts: Vec<T::AccountId>) -> DispatchResultWithPostInfo {
             ensure_root(origin)?;
 
             let accounts_len = eligible_claim_accounts.len();
 
-            ensure!(
-                accounts_len < 10000,
-                Error::<T>::ToManyItems
-            );
+            // ensure!(
+            //     accounts_len < 10000,
+            //     Error::<T>::ToManyItems
+            // );
 
             for eligible_claim_account in eligible_claim_accounts {
-                <EligibleClaimAccount<T>>::insert(&eligible_claim_account, true);
+                <EligibleClaimAccounts<T>>::insert(&eligible_claim_account, true);
             }
 
             Self::deposit_event(Event::EligibleAccountsAdded(accounts_len as u16));
