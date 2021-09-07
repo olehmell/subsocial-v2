@@ -8,6 +8,7 @@ use sp_runtime::{
 };
 use frame_support::{assert_ok, assert_noop, parameter_types, dispatch::DispatchResult};
 use frame_system as system;
+use pallet_utils::{DEFAULT_MIN_HANDLE_LEN, DEFAULT_MAX_HANDLE_LEN};
 
 use crate as multiownership;
 
@@ -83,8 +84,8 @@ impl pallet_balances::Config for Test {
 }
 
 parameter_types! {
-  pub const MinHandleLen: u32 = 5;
-  pub const MaxHandleLen: u32 = 50;
+  pub const MinHandleLen: u32 = DEFAULT_MIN_HANDLE_LEN;
+  pub const MaxHandleLen: u32 = DEFAULT_MAX_HANDLE_LEN;
 }
 
 impl pallet_utils::Config for Test {

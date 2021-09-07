@@ -11,6 +11,7 @@ use frame_support::{parameter_types, dispatch::DispatchError};
 use frame_system as system;
 
 use crate as utils;
+use crate::{DEFAULT_MIN_HANDLE_LEN, DEFAULT_MAX_HANDLE_LEN};
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
@@ -82,10 +83,9 @@ impl pallet_balances::Config for Test {
 }
 
 parameter_types! {
-  pub const MinHandleLen: u32 = 5;
-  pub const MaxHandleLen: u32 = 50;
-}
-
+    pub const MinHandleLen: u32 = DEFAULT_MIN_HANDLE_LEN;
+    pub const MaxHandleLen: u32 = DEFAULT_MAX_HANDLE_LEN;
+  }
 impl Config for Test {
     type Event = Event;
     type Currency = Balances;

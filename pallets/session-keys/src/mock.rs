@@ -102,8 +102,8 @@ impl pallet_timestamp::Config for Test {
 // TODO export to a common place
 parameter_types! {
   pub const IpfsCidLen: u32 = 46;
-  pub const MinHandleLen: u32 = 5;
-  pub const MaxHandleLen: u32 = 50;
+  pub const MinHandleLen: u32 = DEFAULT_MIN_HANDLE_LEN;
+  pub const MaxHandleLen: u32 = DEFAULT_MAX_HANDLE_LEN;
 }
 
 impl pallet_utils::Config for Test {

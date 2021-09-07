@@ -31,6 +31,9 @@ pub mod rpc;
 pub type SpaceId = u64;
 pub type PostId = u64;
 
+pub const DEFAULT_MIN_HANDLE_LEN: u32 = 5;
+pub const DEFAULT_MAX_HANDLE_LEN: u32 = 50;
+
 #[derive(Encode, Decode, Clone, Eq, PartialEq, RuntimeDebug)]
 pub struct WhoAndWhen<T: Config> {
     pub account: T::AccountId,

@@ -60,7 +60,7 @@ use pallet_reactions::{
 	rpc::FlatReaction,
 };
 use pallet_spaces::rpc::FlatSpace;
-use pallet_utils::{SpaceId, PostId};
+use pallet_utils::{SpaceId, PostId, DEFAULT_MIN_HANDLE_LEN, DEFAULT_MAX_HANDLE_LEN};
 
 pub mod constants;
 use constants::{currency::*, time::*};
@@ -302,8 +302,8 @@ impl pallet_utility::Config for Runtime {
 // ------------------------------------------------------------------------------------------------
 
 parameter_types! {
-  pub const MinHandleLen: u32 = 5;
-  pub const MaxHandleLen: u32 = 50;
+  pub const MinHandleLen: u32 = DEFAULT_MIN_HANDLE_LEN;
+  pub const MaxHandleLen: u32 = DEFAULT_MAX_HANDLE_LEN;
 }
 
 impl pallet_utils::Config for Runtime {
