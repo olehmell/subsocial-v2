@@ -10,11 +10,11 @@ use sp_std::fmt::Debug;
 
 pub use pallet::*;
 
-// #[cfg(test)]
-// mod mock;
+#[cfg(test)]
+mod mock;
 
-// #[cfg(test)]
-// mod tests;
+#[cfg(test)]
+mod tests;
 
 // #[cfg(feature = "runtime-benchmarks")]
 // mod benchmarking;
@@ -38,7 +38,10 @@ pub mod pallet {
     pub trait Config: frame_system::Config + pallet_utils::Config {
         type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 
+        #[pallet::constant]
         type InitialClaimAmount: Get<BalanceOf<Self>>;
+
+        #[pallet::constant]
         type AccountsSetLimit: Get<u16>;
     }
 
@@ -46,8 +49,6 @@ pub mod pallet {
     #[pallet::generate_store(pub(super) trait Store)]
     pub struct Pallet<T>(_);
 
-    // The pallet's runtime storage items.
-    // https://substrate.dev/docs/en/knowledgebase/runtime/storage
     #[pallet::storage]
     #[pallet::getter(fn claim_by_account)]
     pub(super) type ClaimedByAccount<T: Config> = StorageMap<_, Blake2_128Concat, T::AccountId, BalanceOf<T>, ValueQuery>;
@@ -58,7 +59,7 @@ pub mod pallet {
 
     #[pallet::storage]
     #[pallet::getter(fn rewards_account)]
-    pub(super) type RewardsAccount<T: Config> = StorageValue<_, Option<T::AccountId>>;
+    pub(super) type RewardsAccount<T: Config> = StorageValue<_, T::AccountId>;
 
     // Pallets use events to inform users when important changes are made.
     // https://substrate.dev/docs/en/knowledgebase/runtime/events
@@ -91,7 +92,7 @@ pub mod pallet {
             DispatchClass::Normal,
             Pays::No
         ))]
-        pub fn tokens_claim(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
+        pub fn claim_tokens(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
 
             Self::prevalidate_tokens_claim(&who)?;
@@ -99,7 +100,7 @@ pub mod pallet {
             let rewards_account: T::AccountId;
 
             if let Some(account) = Self::rewards_account() {
-                rewards_account = account.unwrap();
+                rewards_account = account;
             } else {
                 fail!(Error::<T>::NoRewardsAccount);
             }
@@ -125,7 +126,7 @@ pub mod pallet {
                     Error::<T>::NoFreeBalanceOnRewardsAccount
                  );
 
-                <RewardsAccount<T>>::put(Some(&reward_account));
+                <RewardsAccount<T>>::put(&reward_account);
                 Self::deposit_event(Event::RewardsAccountAdded(reward_account));
 
             } else {
@@ -222,9 +223,6 @@ impl<T: Config + Send + Sync> SignedExtension for PrevalidateTokenClaim<T>
         Ok(())
     }
 
-    // <weight>
-    // The weight of this logic is included in the `attest` dispatchable.
-    // </weight>
     fn validate(
         &self,
         who: &Self::AccountId,
@@ -233,7 +231,7 @@ impl<T: Config + Send + Sync> SignedExtension for PrevalidateTokenClaim<T>
         _len: usize,
     ) -> TransactionValidity {
         if let Some(local_call) = call.is_sub_type() {
-            if let Call::tokens_claim() = local_call {
+            if let Call::claim_tokens() = local_call {
                 Pallet::<T>::prevalidate_tokens_claim(who)
                     .map_err(|_| InvalidTransaction::Custom(ValidityError::NotAllowedToClaim.into()))?;
             }
