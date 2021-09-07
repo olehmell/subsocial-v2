@@ -1,24 +1,23 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-/// Edit this file to define custom logic or remove it if it is not needed.
-/// Learn more about FRAME and the core library of Substrate FRAME pallets:
-/// <https://substrate.dev/docs/en/knowledgebase/runtime/frame>
+use codec::{Decode, Encode};
+use frame_support::traits::IsSubType;
+use sp_runtime::{
+    traits::{DispatchInfoOf, SignedExtension},
+    transaction_validity::{TransactionValidity, TransactionValidityError, ValidTransaction, InvalidTransaction}
+};
+use sp_std::fmt::Debug;
 
 pub use pallet::*;
-use codec::{Encode, Decode};
-use frame_support::traits::IsSubType;
-use sp_std::fmt::Debug;
-use sp_runtime::traits::{SignedExtension, DispatchInfoOf};
-use sp_runtime::transaction_validity::{TransactionValidityError, TransactionValidity, ValidTransaction};
-use frame_support::{ensure};
+
 // #[cfg(test)]
 // mod mock;
-//
+
 // #[cfg(test)]
 // mod tests;
 
-#[cfg(feature = "runtime-benchmarks")]
-mod benchmarking;
+// #[cfg(feature = "runtime-benchmarks")]
+// mod benchmarking;
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -27,12 +26,13 @@ pub mod pallet {
         ensure, fail,
         pallet_prelude::*,
         traits::{Currency, ExistenceRequirement},
-        weights::{DispatchClass, Pays}
+        weights::{DispatchClass, Pays},
     };
     use frame_system::pallet_prelude::*;
-    use sp_std::vec::Vec;
-    use pallet_utils::BalanceOf;
     use sp_runtime::traits::Zero;
+    use sp_std::vec::Vec;
+
+    use pallet_utils::BalanceOf;
 
     #[pallet::config]
     pub trait Config: frame_system::Config + pallet_utils::Config {
@@ -67,7 +67,7 @@ pub mod pallet {
     pub enum Event<T: Config> {
         Claimed(T::AccountId, BalanceOf<T>),
         RewardsAccountAdded(T::AccountId),
-        EligibleAccountsAdded(u16)
+        EligibleAccountsAdded(u16),
     }
 
     // Errors inform users that something went wrong.
@@ -77,21 +77,14 @@ pub mod pallet {
         AccountNotEligible,
         NoRewardsAccount,
         NoFreeBalanceOnRewardsAccount,
-        ToManyItems
+        ToManyItems,
     }
 
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {}
 
     #[pallet::call]
-    impl<T:Config> Pallet<T> {
-
-        pub fn prevalidate_tokens_claim(who: &T::AccountId) -> DispatchResultWithPostInfo {
-            ensure!(Self::eligible_claim_account(who), Error::<T>::AccountNotEligible);
-            ensure!(!Self::claim_by_account(who).is_zero(), Error::<T>::TokensAlreadyClaimed);
-            Ok(().into())
-        }
-
+    impl<T: Config> Pallet<T> {
         #[pallet::weight((
             10_000 + T::DbWeight::get().writes(1),
             DispatchClass::Normal,
@@ -155,27 +148,30 @@ pub mod pallet {
             Ok(().into())
         }
     }
+
+    impl<T: Config> Pallet<T> {
+        pub(super) fn prevalidate_tokens_claim(who: &T::AccountId) -> DispatchResultWithPostInfo {
+            ensure!(Self::eligible_claim_account(who), Error::<T>::AccountNotEligible);
+            ensure!(!Self::claim_by_account(who).is_zero(), Error::<T>::TokensAlreadyClaimed);
+            Ok(().into())
+        }
+    }
 }
 
-#[repr(u8)]
-enum ValidityError {
-    UserNotPermitted = 0,
-}
-
-/// Validate `attest` calls prior to execution. Needed to avoid a DoS attack since they are
+/// Validate `tokens_claim` calls prior to execution. Needed to avoid a DoS attack since they are
 /// otherwise free to place on chain.
 #[derive(Encode, Decode, Clone, Eq, PartialEq)]
-pub struct PrevalidateAttests<T: Config + Send + Sync>(sp_std::marker::PhantomData<T>)
+pub struct PrevalidateTokenClaim<T: Config + Send + Sync>(sp_std::marker::PhantomData<T>)
     where
         <T as frame_system::Config>::Call: IsSubType<Call<T>>;
 
-impl<T: Config + Send + Sync> Debug for PrevalidateAttests<T>
+impl<T: Config + Send + Sync> Debug for PrevalidateTokenClaim<T>
     where
         <T as frame_system::Config>::Call: IsSubType<Call<T>>,
 {
     #[cfg(feature = "std")]
     fn fmt(&self, f: &mut sp_std::fmt::Formatter) -> sp_std::fmt::Result {
-        write!(f, "PrevalidateAttests")
+        write!(f, "PrevalidateTokenClaim")
     }
 
     #[cfg(not(feature = "std"))]
@@ -184,7 +180,7 @@ impl<T: Config + Send + Sync> Debug for PrevalidateAttests<T>
     }
 }
 
-impl<T: Config + Send + Sync> PrevalidateAttests<T>
+impl<T: Config + Send + Sync> PrevalidateTokenClaim<T>
     where
         <T as frame_system::Config>::Call: IsSubType<Call<T>>,
 {
@@ -194,7 +190,18 @@ impl<T: Config + Send + Sync> PrevalidateAttests<T>
     }
 }
 
-impl<T: Config + Send + Sync> SignedExtension for PrevalidateAttests<T>
+#[repr(u8)]
+enum ValidityError {
+    NotAllowedToClaim = 0,
+}
+
+impl From<ValidityError> for u8 {
+    fn from(err: ValidityError) -> Self {
+        err as u8
+    }
+}
+
+impl<T: Config + Send + Sync> SignedExtension for PrevalidateTokenClaim<T>
     where
         <T as frame_system::Config>::Call: IsSubType<Call<T>>,
 {
@@ -202,7 +209,7 @@ impl<T: Config + Send + Sync> SignedExtension for PrevalidateAttests<T>
     type Call = <T as frame_system::Config>::Call;
     type AdditionalSigned = ();
     type Pre = ();
-    const IDENTIFIER: &'static str = "PrevalidateAttests";
+    const IDENTIFIER: &'static str = "PrevalidateTokenClaim";
 
     fn additional_signed(&self) -> Result<Self::AdditionalSigned, TransactionValidityError> {
         Ok(())
@@ -219,10 +226,9 @@ impl<T: Config + Send + Sync> SignedExtension for PrevalidateAttests<T>
         _len: usize,
     ) -> TransactionValidity {
         if let Some(local_call) = call.is_sub_type() {
-            if let Call::tokens_claim(_) = local_call {
-                if let Err(_) = Pallet::<T>::prevalidate_tokens_claim(&who) {
-                    return Err(ValidityError::UserNotPermitted.into())
-                }
+            if let Call::tokens_claim() = local_call {
+                Pallet::<T>::prevalidate_tokens_claim(who)
+                    .map_err(|_| InvalidTransaction::Custom(ValidityError::NotAllowedToClaim.into()))?;
             }
         }
         Ok(ValidTransaction::default())
