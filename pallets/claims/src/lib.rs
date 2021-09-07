@@ -39,6 +39,7 @@ pub mod pallet {
         type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 
         type InitialClaimAmount: Get<BalanceOf<Self>>;
+        type AccountsSetLimit: Get<u16>;
     }
 
     #[pallet::pallet]
@@ -49,7 +50,7 @@ pub mod pallet {
     // https://substrate.dev/docs/en/knowledgebase/runtime/storage
     #[pallet::storage]
     #[pallet::getter(fn claim_by_account)]
-    pub(super) type ClaimByAccount<T: Config> = StorageMap<_, Blake2_128Concat, T::AccountId, BalanceOf<T>, ValueQuery>;
+    pub(super) type ClaimedByAccount<T: Config> = StorageMap<_, Blake2_128Concat, T::AccountId, BalanceOf<T>, ValueQuery>;
 
     #[pallet::storage]
     #[pallet::getter(fn eligible_claim_account)]
@@ -57,7 +58,7 @@ pub mod pallet {
 
     #[pallet::storage]
     #[pallet::getter(fn rewards_account)]
-    pub(super) type RewardsAccount<T: Config> = StorageValue<_, T::AccountId>;
+    pub(super) type RewardsAccount<T: Config> = StorageValue<_, Option<T::AccountId>>;
 
     // Pallets use events to inform users when important changes are made.
     // https://substrate.dev/docs/en/knowledgebase/runtime/events
@@ -77,7 +78,7 @@ pub mod pallet {
         AccountNotEligible,
         NoRewardsAccount,
         NoFreeBalanceOnRewardsAccount,
-        ToManyItems,
+        ToManyAccounts,
     }
 
     #[pallet::hooks]
@@ -93,13 +94,12 @@ pub mod pallet {
         pub fn tokens_claim(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
 
-            ensure!(Self::eligible_claim_account(&who), Error::<T>::AccountNotEligible);
-            ensure!(!Self::claim_by_account(&who).is_zero(), Error::<T>::TokensAlreadyClaimed);
+            Self::prevalidate_tokens_claim(&who)?;
 
-            let rewards_account;
+            let rewards_account: T::AccountId;
 
             if let Some(account) = Self::rewards_account() {
-                rewards_account = account;
+                rewards_account = account.unwrap();
             } else {
                 fail!(Error::<T>::NoRewardsAccount);
             }
@@ -108,25 +108,30 @@ pub mod pallet {
 
             <T as pallet_utils::Config>::Currency::transfer(&rewards_account, &who, amount, ExistenceRequirement::KeepAlive)?;
 
-            <ClaimByAccount<T>>::insert(&who, amount);
+            <ClaimedByAccount<T>>::insert(&who, amount);
 
             Self::deposit_event(Event::Claimed(who, amount));
             Ok(().into())
         }
 
         #[pallet::weight(10_000 + T::DbWeight::get().writes(1))]
-        pub fn set_rewards_account(origin: OriginFor<T>, reward_account: T::AccountId) -> DispatchResultWithPostInfo {
+        pub fn set_rewards_account(origin: OriginFor<T>, reward_account_opt: Option<T::AccountId>) -> DispatchResultWithPostInfo {
             ensure_root(origin)?;
 
-            ensure!(
-                T::Currency::free_balance(&reward_account) >=
-                T::Currency::minimum_balance(),
-                Error::<T>::NoFreeBalanceOnRewardsAccount
-            );
+            if let Some(reward_account) = reward_account_opt {
+                ensure!(
+                    T::Currency::free_balance(&reward_account) >=
+                    T::Currency::minimum_balance(),
+                    Error::<T>::NoFreeBalanceOnRewardsAccount
+                 );
 
-            <RewardsAccount<T>>::put(&reward_account);
+                <RewardsAccount<T>>::put(Some(&reward_account));
+                Self::deposit_event(Event::RewardsAccountAdded(reward_account));
 
-            Self::deposit_event(Event::RewardsAccountAdded(reward_account));
+            } else {
+                <RewardsAccount<T>>::kill();
+            }
+
             Ok(().into())
         }
 
@@ -135,11 +140,12 @@ pub mod pallet {
             ensure_root(origin)?;
 
             let accounts_len = eligible_claim_accounts.len();
+            let accounts_set_limit = T::AccountsSetLimit::get();
 
-            // ensure!(
-            //     accounts_len < 10000,
-            //     Error::<T>::ToManyItems
-            // );
+            ensure!(
+                accounts_len < accounts_set_limit.into(),
+                Error::<T>::ToManyAccounts
+            );
 
             for eligible_claim_account in eligible_claim_accounts {
                 <EligibleClaimAccounts<T>>::insert(&eligible_claim_account, true);
@@ -153,7 +159,7 @@ pub mod pallet {
     impl<T: Config> Pallet<T> {
         pub(super) fn prevalidate_tokens_claim(who: &T::AccountId) -> DispatchResultWithPostInfo {
             ensure!(Self::eligible_claim_account(who), Error::<T>::AccountNotEligible);
-            ensure!(!Self::claim_by_account(who).is_zero(), Error::<T>::TokensAlreadyClaimed);
+            ensure!(Self::claim_by_account(who).is_zero(), Error::<T>::TokensAlreadyClaimed);
             Ok(().into())
         }
     }
