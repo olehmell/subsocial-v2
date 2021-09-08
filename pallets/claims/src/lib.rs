@@ -90,7 +90,7 @@ pub mod pallet {
     #[pallet::call]
     impl<T: Config> Pallet<T> {
         #[pallet::weight((
-            10_000 + T::DbWeight::get().writes(1),
+            10_000 + T::DbWeight::get().reads_writes(2, 1),
             DispatchClass::Normal,
             Pays::No
         ))]
@@ -122,7 +122,7 @@ pub mod pallet {
             Ok(().into())
         }
 
-        #[pallet::weight(10_000 + T::DbWeight::get().writes(1))]
+        #[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1, 1))]
         pub fn set_rewards_sender(
             origin: OriginFor<T>,
             rewards_sender_opt: Option<T::AccountId>
@@ -146,7 +146,7 @@ pub mod pallet {
             Ok(().into())
         }
 
-        #[pallet::weight(10_000 + T::DbWeight::get().writes(1))]
+        #[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1, 1))]
         pub fn add_eligible_accounts(origin: OriginFor<T>, eligible_accounts: Vec<T::AccountId>) -> DispatchResultWithPostInfo {
             ensure_root(origin)?;
 
