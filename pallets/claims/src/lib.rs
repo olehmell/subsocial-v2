@@ -8,7 +8,7 @@ use codec::{Decode, Encode};
 use frame_support::traits::IsSubType;
 use sp_runtime::{
     traits::{DispatchInfoOf, SignedExtension},
-    transaction_validity::{TransactionValidity, TransactionValidityError, ValidTransaction, InvalidTransaction}
+    transaction_validity::{InvalidTransaction, TransactionValidity, TransactionValidityError, ValidTransaction},
 };
 use sp_std::fmt::Debug;
 
@@ -65,8 +65,6 @@ pub mod pallet {
     #[pallet::getter(fn tokens_claimed_by_account)]
     pub(super) type TokensClaimedByAccount<T: Config> = StorageMap<_, Blake2_128Concat, T::AccountId, BalanceOf<T>, ValueQuery>;
 
-    // Pallets use events to inform users when important changes are made.
-    // https://substrate.dev/docs/en/knowledgebase/runtime/events
     #[pallet::event]
     #[pallet::metadata(T::AccountId = "AccountId")]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -77,7 +75,6 @@ pub mod pallet {
         TokensClaimed(T::AccountId, BalanceOf<T>),
     }
 
-    // Errors inform users that something went wrong.
     #[pallet::error]
     pub enum Error<T> {
         NoRewardsSenderSet,
@@ -112,7 +109,12 @@ pub mod pallet {
 
             let amount = T::InitialClaimAmount::get();
 
-            <T as pallet_utils::Config>::Currency::transfer(&rewards_sender, &who, amount, ExistenceRequirement::KeepAlive)?;
+            <T as pallet_utils::Config>::Currency::transfer(
+                &rewards_sender,
+                &who,
+                amount,
+                ExistenceRequirement::KeepAlive
+            )?;
 
             <TokensClaimedByAccount<T>>::insert(&who, amount);
 
@@ -121,7 +123,10 @@ pub mod pallet {
         }
 
         #[pallet::weight(10_000 + T::DbWeight::get().writes(1))]
-        pub fn set_rewards_sender(origin: OriginFor<T>, rewards_sender_opt: Option<T::AccountId>) -> DispatchResultWithPostInfo {
+        pub fn set_rewards_sender(
+            origin: OriginFor<T>,
+            rewards_sender_opt: Option<T::AccountId>
+        ) -> DispatchResultWithPostInfo {
             ensure_root(origin)?;
 
             if let Some(rewards_sender) = rewards_sender_opt {
