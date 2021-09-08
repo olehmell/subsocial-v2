@@ -116,51 +116,130 @@ pub(crate) type Balance = u64;
 pub struct ExtBuilder;
 
 impl ExtBuilder {
-    fn configure_storages(storage: &mut Storage) {
-        let _ = pallet_balances::GenesisConfig::<Test> {
-            balances: [ACCOUNT1].iter().cloned().map(|k|(k, 100_000)).collect(),
-        }.assimilate_storage(storage);
+    fn build_configure_balances_fn(balance: Balance) -> impl Fn(&mut Storage) {
+        move |storage: &mut Storage| {
+            let _ = pallet_balances::GenesisConfig::<Test> {
+                balances: [ACCOUNT1].iter().cloned().map(|k| (k, balance)).collect(),
+            }.assimilate_storage(storage);
+        }
     }
 
-    pub fn build() -> TestExternalities {
-        let mut storage = system::GenesisConfig::default()
+    fn _build<F>(configure_balances: F) -> TestExternalities
+        where F: Fn(&mut Storage)
+    {
+        let storage = &mut system::GenesisConfig::default()
             .build_storage::<Test>()
             .unwrap();
 
-        Self::configure_storages(&mut storage);
+        configure_balances(storage);
 
-        let mut ext = TestExternalities::from(storage);
+        let mut ext = TestExternalities::from(storage.clone());
         ext.execute_with(|| System::set_block_number(1));
 
         ext
     }
 
-    pub fn build_with_account1_as_rewards_account() -> TestExternalities {
+    pub fn build() -> TestExternalities
+    {
+        let sufficient_balance = InitialClaimAmount::get() + ExistentialDeposit::get();
+        Self::_build(Self::build_configure_balances_fn(sufficient_balance))
+    }
+
+    pub fn build_with_insufficient_balances_for_account1() -> TestExternalities
+    {
+        let insufficient_balance = ExistentialDeposit::get() + InitialClaimAmount::get() - 1;
+        Self::_build(Self::build_configure_balances_fn(insufficient_balance))
+    }
+
+    pub(crate) fn build_with_account1_as_rewards_account_and_eligible_accounts() -> TestExternalities
+    {
         let mut ext = Self::build();
         ext.execute_with(|| {
-            RewardsAccount::<Test>::put(ACCOUNT1);
-            let eligible_accounts = vec![ACCOUNT2];
-            assert_ok!(Claims::add_eligible_claim_accounts(Origin::root(), eligible_accounts));
-            // Add something to storage 1
-            // Add something to storage to
-            // Maybe assert something
+            RewardsSender::<Test>::put(ACCOUNT1);
+            let eligible_accounts = vec![ACCOUNT2, ACCOUNT3, ACCOUNT4];
+            assert_ok!(Claims::add_eligible_accounts(Origin::root(), eligible_accounts));
         });
 
         ext
     }
+
+    fn _build_with_account1_as_rewards_account(build: fn () -> TestExternalities) -> TestExternalities {
+        let mut ext = build();
+        ext.execute_with(|| {
+            RewardsSender::<Test>::put(ACCOUNT1);
+        });
+
+        ext
+    }
+
+    pub fn build_with_rewards_account() -> TestExternalities {
+        Self::_build_with_account1_as_rewards_account(Self::build)
+    }
+
+    // pub fn build_with_insufficient_balances_and_rewards_account() -> TestExternalities {
+    //     Self::_build_with_account1_as_rewards_account(Self::build_with_insufficient_balances_for_account1)
+    // }
+
 }
 
 pub(crate) const ACCOUNT1: AccountId = 11;
 pub(crate) const ACCOUNT2: AccountId = 12;
+pub(crate) const ACCOUNT3: AccountId = 13;
+pub(crate) const ACCOUNT4: AccountId = 14;
 
 pub(crate) fn _claim_tokens_to_account2() -> DispatchResultWithPostInfo {
     _claim_tokens(None)
 }
+pub(crate) fn _claim_tokens_to_account3() -> DispatchResultWithPostInfo {
+    _claim_tokens(Some(Origin::signed(ACCOUNT3)))
+}
+pub(crate) fn _claim_tokens_to_account4() -> DispatchResultWithPostInfo {
+    _claim_tokens(Some(Origin::signed(ACCOUNT4)))
+}
+
 
 pub(crate) fn _claim_tokens(
     origin: Option<Origin>,
 ) -> DispatchResultWithPostInfo {
     Claims::claim_tokens(
         origin.unwrap_or_else(|| Origin::signed(ACCOUNT2)),
+    )
+}
+
+pub(crate) fn _set_account1_as_rewards_sender_to_root() -> DispatchResultWithPostInfo {
+    _set_rewards_sender(None)
+}
+pub(crate) fn _set_account1_as_rewards_sender_to_account2() -> DispatchResultWithPostInfo {
+    _set_rewards_sender(Some(Origin::signed(ACCOUNT2)))
+}
+
+pub(crate) fn _set_rewards_sender(
+    origin: Option<Origin>,
+) -> DispatchResultWithPostInfo {
+    Claims::set_rewards_sender(
+        origin.unwrap_or_else(|| Origin::root()),
+        Some(ACCOUNT1)
+    )
+}
+
+pub(crate) fn _add_one_eligible_account_to_root() -> DispatchResultWithPostInfo {
+    _add_eligible_accounts(None, vec![ ACCOUNT1 ])
+}
+
+pub(crate) fn _add_many_eligible_account_to_root() -> DispatchResultWithPostInfo {
+    _add_eligible_accounts(None, vec![ACCOUNT1; AccountsSetLimit::get() as usize + 1])
+}
+
+pub(crate) fn _add_eligible_accounts_to_account2() -> DispatchResultWithPostInfo {
+    _add_eligible_accounts(Some(Origin::signed(ACCOUNT2)), vec![])
+}
+
+pub(crate) fn _add_eligible_accounts(
+    origin: Option<Origin>,
+    eligible_accounts: Vec<AccountId>
+) -> DispatchResultWithPostInfo {
+    Claims::add_eligible_accounts(
+        origin.unwrap_or_else(|| Origin::root()),
+        eligible_accounts
     )
 }
