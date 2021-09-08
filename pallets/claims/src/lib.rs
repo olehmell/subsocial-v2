@@ -71,7 +71,7 @@ pub mod pallet {
     pub enum Event<T: Config> {
         RewardsSenderSet(T::AccountId),
         RewardsSenderRemoved(),
-        EligibleAccountsAdded(u16),
+        EligibleAccountsAdded(usize),
         TokensClaimed(T::AccountId, BalanceOf<T>),
     }
 
@@ -97,8 +97,6 @@ pub mod pallet {
         pub fn claim_tokens(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
 
-            Self::ensure_allowed_to_claim_tokens(&who)?;
-
             let rewards_sender: T::AccountId;
 
             if let Some(account) = Self::rewards_sender() {
@@ -106,6 +104,8 @@ pub mod pallet {
             } else {
                 fail!(Error::<T>::NoRewardsSenderSet);
             }
+
+            Self::ensure_allowed_to_claim_tokens(&who)?;
 
             let amount = T::InitialClaimAmount::get();
 
@@ -147,7 +147,10 @@ pub mod pallet {
         }
 
         #[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1, 1))]
-        pub fn add_eligible_accounts(origin: OriginFor<T>, eligible_accounts: Vec<T::AccountId>) -> DispatchResultWithPostInfo {
+        pub fn add_eligible_accounts(
+            origin: OriginFor<T>,
+            eligible_accounts: Vec<T::AccountId>
+        ) -> DispatchResultWithPostInfo {
             ensure_root(origin)?;
 
             let accounts_len = eligible_accounts.len();
@@ -162,7 +165,7 @@ pub mod pallet {
                 <EligibleAccounts<T>>::insert(&eligible_account, true);
             }
 
-            Self::deposit_event(Event::EligibleAccountsAdded(accounts_len as u16));
+            Self::deposit_event(Event::EligibleAccountsAdded(accounts_len));
             Ok(().into())
         }
     }
@@ -176,7 +179,7 @@ pub mod pallet {
     }
 }
 
-/// Validate `tokens_claim` calls prior to execution. Needed to avoid a DoS attack since they are
+/// Validate `claim_tokens` calls prior to execution. Needed to avoid a DoS attack since they are
 /// otherwise free to place on chain.
 #[derive(Encode, Decode, Clone, Eq, PartialEq)]
 pub struct EnsureAllowedToClaimTokens<T: Config + Send + Sync>(sp_std::marker::PhantomData<T>)
