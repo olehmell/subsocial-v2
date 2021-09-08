@@ -6,7 +6,7 @@ edition = '2018'
 license = 'GPL-3.0-only'
 homepage = 'https://subsocial.network'
 repository = 'https://github.com/dappforce/dappforce-subsocial-node'
-description = 'Integration tests'
+description = 'Pallet that allows accounts from historical snapshots to claim some tokens.'
 keywords = ['blockchain', 'cryptocurrency', 'social-network', 'news-feed', 'marketplace']
 categories = ['cryptography::cryptocurrencies']
 
@@ -14,13 +14,13 @@ categories = ['cryptography::cryptocurrencies']
 default = ['std']
 std = [
     'codec/std',
+    'frame-support/std',
+    'frame-system/std',
+    'pallet-balances/std',
+    'pallet-timestamp/std',
     'sp-io/std',
     'sp-runtime/std',
     'sp-std/std',
-    'pallet-balances/std',
-    'pallet-timestamp/std',
-    'frame-support/std',
-    'frame-system/std',
     'pallet-utils/std',
 ]
 
