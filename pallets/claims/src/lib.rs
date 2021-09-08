@@ -100,7 +100,7 @@ pub mod pallet {
         pub fn claim_tokens(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
 
-            Self::prevalidate_tokens_claim(&who)?;
+            Self::ensure_allowed_to_claim_tokens(&who)?;
 
             let rewards_sender: T::AccountId;
 
@@ -163,10 +163,7 @@ pub mod pallet {
     }
 
     impl<T: Config> Pallet<T> {
-
-        // TODO maybe rename to `prevalidate_claim_tokens` ??
-
-        pub(super) fn prevalidate_tokens_claim(who: &T::AccountId) -> DispatchResultWithPostInfo {
+        pub(super) fn ensure_allowed_to_claim_tokens(who: &T::AccountId) -> DispatchResultWithPostInfo {
             ensure!(Self::eligible_account(who), Error::<T>::AccountNotEligible);
             ensure!(Self::tokens_claimed_by_account(who).is_zero(), Error::<T>::TokensAlreadyClaimed);
             Ok(().into())
@@ -177,20 +174,17 @@ pub mod pallet {
 /// Validate `tokens_claim` calls prior to execution. Needed to avoid a DoS attack since they are
 /// otherwise free to place on chain.
 #[derive(Encode, Decode, Clone, Eq, PartialEq)]
-
-// TODO maybe rename to `PrevalidateClaimTokens` ??
-
-pub struct PrevalidateTokenClaim<T: Config + Send + Sync>(sp_std::marker::PhantomData<T>)
+pub struct EnsureAllowedToClaimTokens<T: Config + Send + Sync>(sp_std::marker::PhantomData<T>)
     where
         <T as frame_system::Config>::Call: IsSubType<Call<T>>;
 
-impl<T: Config + Send + Sync> Debug for PrevalidateTokenClaim<T>
+impl<T: Config + Send + Sync> Debug for EnsureAllowedToClaimTokens<T>
     where
         <T as frame_system::Config>::Call: IsSubType<Call<T>>,
 {
     #[cfg(feature = "std")]
     fn fmt(&self, f: &mut sp_std::fmt::Formatter) -> sp_std::fmt::Result {
-        write!(f, "PrevalidateTokenClaim")
+        write!(f, "EnsureAllowedToClaimTokens")
     }
 
     #[cfg(not(feature = "std"))]
@@ -199,7 +193,7 @@ impl<T: Config + Send + Sync> Debug for PrevalidateTokenClaim<T>
     }
 }
 
-impl<T: Config + Send + Sync> PrevalidateTokenClaim<T>
+impl<T: Config + Send + Sync> EnsureAllowedToClaimTokens<T>
     where
         <T as frame_system::Config>::Call: IsSubType<Call<T>>,
 {
@@ -220,7 +214,7 @@ impl From<ValidityError> for u8 {
     }
 }
 
-impl<T: Config + Send + Sync> SignedExtension for PrevalidateTokenClaim<T>
+impl<T: Config + Send + Sync> SignedExtension for EnsureAllowedToClaimTokens<T>
     where
         <T as frame_system::Config>::Call: IsSubType<Call<T>>,
 {
@@ -229,7 +223,7 @@ impl<T: Config + Send + Sync> SignedExtension for PrevalidateTokenClaim<T>
     type AdditionalSigned = ();
     type Pre = ();
 
-    const IDENTIFIER: &'static str = "PrevalidateTokenClaim";
+    const IDENTIFIER: &'static str = "EnsureAllowedToClaimTokens";
 
     fn additional_signed(&self) -> Result<Self::AdditionalSigned, TransactionValidityError> {
         Ok(())
@@ -244,7 +238,7 @@ impl<T: Config + Send + Sync> SignedExtension for PrevalidateTokenClaim<T>
     ) -> TransactionValidity {
         if let Some(local_call) = call.is_sub_type() {
             if let Call::claim_tokens() = local_call {
-                Pallet::<T>::prevalidate_tokens_claim(who)
+                Pallet::<T>::ensure_allowed_to_claim_tokens(who)
                     .map_err(|_| InvalidTransaction::Custom(ValidityError::NotAllowedToClaim.into()))?;
             }
         }
