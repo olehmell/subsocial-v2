@@ -58,7 +58,7 @@ pub mod pallet {
     pub(super) type RewardsSender<T: Config> = StorageValue<_, T::AccountId>;
 
     #[pallet::storage]
-    #[pallet::getter(fn eligible_account)]
+    #[pallet::getter(fn eligible_accounts)]
     pub(super) type EligibleAccounts<T: Config> = StorageMap<_, Blake2_128Concat, T::AccountId, bool, ValueQuery>;
 
     #[pallet::storage]
