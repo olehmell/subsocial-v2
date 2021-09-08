@@ -65,20 +65,24 @@ pub mod pallet {
     #[pallet::getter(fn tokens_claimed_by_account)]
     pub(super) type TokensClaimedByAccount<T: Config> = StorageMap<_, Blake2_128Concat, T::AccountId, BalanceOf<T>, ValueQuery>;
 
+    #[pallet::storage]
+    #[pallet::getter(fn total_amount_claimed)]
+    pub(super) type TotalAmountClaimed<T: Config> = StorageValue<_, BalanceOf<T>>;
+
     #[pallet::event]
     #[pallet::metadata(T::AccountId = "AccountId")]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
         RewardsSenderSet(T::AccountId),
         RewardsSenderRemoved(),
-        EligibleAccountsAdded(usize),
+        EligibleAccountsAdded(u16),
         TokensClaimed(T::AccountId, BalanceOf<T>),
     }
 
     #[pallet::error]
     pub enum Error<T> {
         NoRewardsSenderSet,
-        NoFreeBalanceOnRewardsSender,
+        RewardsSenderHasInsufficientBalance,
         AddingTooManyAccountsAtOnce,
         AccountNotEligible,
         TokensAlreadyClaimed,
@@ -106,17 +110,14 @@ pub mod pallet {
             }
 
             Self::ensure_allowed_to_claim_tokens(&who)?;
+            Self::ensure_rewards_account_has_sufficient_balance(&rewards_sender)?;
 
             let amount = T::InitialClaimAmount::get();
 
-            <T as pallet_utils::Config>::Currency::transfer(
-                &rewards_sender,
-                &who,
-                amount,
-                ExistenceRequirement::KeepAlive
-            )?;
+            <T as pallet_utils::Config>::Currency::transfer(&rewards_sender, &who, amount, ExistenceRequirement::KeepAlive)?;
 
             <TokensClaimedByAccount<T>>::insert(&who, amount);
+            <TotalAmountClaimed<T>>::mutate(|total_amount| total_amount.unwrap_or_default() + amount);
 
             Self::deposit_event(Event::TokensClaimed(who, amount));
             Ok(().into())
@@ -130,11 +131,7 @@ pub mod pallet {
             ensure_root(origin)?;
 
             if let Some(rewards_sender) = rewards_sender_opt {
-                ensure!(
-                    T::Currency::free_balance(&rewards_sender) >=
-                    T::Currency::minimum_balance(),
-                    Error::<T>::NoFreeBalanceOnRewardsSender
-                 );
+                Self::ensure_rewards_account_has_sufficient_balance(&rewards_sender)?;
 
                 <RewardsSender<T>>::put(&rewards_sender);
                 Self::deposit_event(Event::RewardsSenderSet(rewards_sender));
@@ -165,15 +162,26 @@ pub mod pallet {
                 <EligibleAccounts<T>>::insert(&eligible_account, true);
             }
 
-            Self::deposit_event(Event::EligibleAccountsAdded(accounts_len));
+            Self::deposit_event(Event::EligibleAccountsAdded(accounts_len as u16));
             Ok(().into())
         }
     }
 
     impl<T: Config> Pallet<T> {
         pub(super) fn ensure_allowed_to_claim_tokens(who: &T::AccountId) -> DispatchResultWithPostInfo {
-            ensure!(Self::eligible_account(who), Error::<T>::AccountNotEligible);
+            ensure!(Self::eligible_accounts(who), Error::<T>::AccountNotEligible);
             ensure!(Self::tokens_claimed_by_account(who).is_zero(), Error::<T>::TokensAlreadyClaimed);
+            Ok(().into())
+        }
+
+        pub(super) fn ensure_rewards_account_has_sufficient_balance(
+            rewards_sender: &T::AccountId
+        ) -> DispatchResultWithPostInfo {
+            ensure!(
+                T::Currency::free_balance(rewards_sender) >=
+                T::Currency::minimum_balance() + T::InitialClaimAmount::get(),
+                Error::<T>::RewardsSenderHasInsufficientBalance
+             );
             Ok(().into())
         }
     }
