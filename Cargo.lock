@@ -3799,6 +3799,7 @@ dependencies = [
 name = "pallet-claims"
 version = "0.7.0"
 dependencies = [
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
  "pallet-balances",
