@@ -138,6 +138,7 @@ runtime-benchmarks = [
     'pallet-treasury/runtime-benchmarks',
     'pallet-utility/runtime-benchmarks',
     'pallet-vesting/runtime-benchmarks',
+    'pallet-claims/runtime-benchmarks',
     'pallet-offences-benchmarking',
     'pallet-session-benchmarking',
     'sp-runtime/runtime-benchmarks',
