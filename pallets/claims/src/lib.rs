@@ -73,8 +73,8 @@ pub mod pallet {
     pub(super) type TokensClaimedByAccount<T: Config> = StorageMap<_, Blake2_128Concat, T::AccountId, BalanceOf<T>, ValueQuery>;
 
     #[pallet::storage]
-    #[pallet::getter(fn total_amount_claimed)]
-    pub(super) type TotalAmountClaimed<T: Config> = StorageValue<_, BalanceOf<T>>;
+    #[pallet::getter(fn total_tokens_claimed)]
+    pub(super) type TotalTokensClaimed<T: Config> = StorageValue<_, BalanceOf<T>>;
 
     #[pallet::event]
     #[pallet::metadata(T::AccountId = "AccountId")]
@@ -119,14 +119,21 @@ pub mod pallet {
             Self::ensure_allowed_to_claim_tokens(&who)?;
             Self::ensure_rewards_account_has_sufficient_balance(&rewards_sender)?;
 
-            let amount = T::InitialClaimAmount::get();
+            let initial_amount = T::InitialClaimAmount::get();
 
-            <T as pallet_utils::Config>::Currency::transfer(&rewards_sender, &who, amount, ExistenceRequirement::KeepAlive)?;
+            <T as pallet_utils::Config>::Currency::transfer(
+                &rewards_sender,
+                &who,
+                initial_amount,
+                ExistenceRequirement::KeepAlive
+            )?;
 
-            <TokensClaimedByAccount<T>>::insert(&who, amount);
-            <TotalAmountClaimed<T>>::mutate(|total_amount| total_amount.unwrap_or_default() + amount);
+            <TokensClaimedByAccount<T>>::insert(&who, initial_amount);
 
-            Self::deposit_event(Event::TokensClaimed(who, amount));
+            // TODO should be .saturating_add(initial_amount)
+            <TotalTokensClaimed<T>>::mutate(|total_amount| total_amount.unwrap_or_default() + initial_amount);
+
+            Self::deposit_event(Event::TokensClaimed(who, initial_amount));
             Ok(().into())
         }
 
@@ -186,7 +193,10 @@ pub mod pallet {
         ) -> DispatchResultWithPostInfo {
             ensure!(
                 T::Currency::free_balance(rewards_sender) >=
+                
+                // TODO should be .saturating_add(T::InitialClaimAmount::get())
                 T::Currency::minimum_balance() + T::InitialClaimAmount::get(),
+                
                 Error::<T>::RewardsSenderHasInsufficientBalance
              );
             Ok(().into())
