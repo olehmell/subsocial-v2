@@ -439,11 +439,11 @@ parameter_types! {
     pub AccountsSetLimit: u16 = 30000;
 }
 
-impl pallet_claims::Config for Runtime {
+impl pallet_dotsama_claims::Config for Runtime {
     type Event = Event;
     type InitialClaimAmount = InitialClaimAmount;
     type AccountsSetLimit = AccountsSetLimit;
-    type WeightInfo = pallet_claims::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = pallet_dotsama_claims::weights::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {}
@@ -565,7 +565,7 @@ construct_runtime!(
 		// New experimental pallets. Not recommended to use in production yet.
 
 		Faucets: pallet_faucets::{Module, Call, Storage, Event<T>},
-        Claims: pallet_claims::{Module, Call, Storage, Event<T>},
+        Claims: pallet_dotsama_claims::{Module, Call, Storage, Event<T>},
 		// SessionKeys: pallet_session_keys::{Module, Call, Storage, Event<T>},
 		// Moderation: pallet_moderation::{Module, Call, Storage, Event<T>},
 		// Donations: pallet_donations::{Module, Call, Storage, Event<T>},
@@ -592,7 +592,7 @@ pub type SignedExtra = (
     frame_system::CheckNonce<Runtime>,
     frame_system::CheckWeight<Runtime>,
     pallet_transaction_payment::ChargeTransactionPayment<Runtime>,
-    pallet_claims::EnsureAllowedToClaimTokens<Runtime>,
+    pallet_dotsama_claims::EnsureAllowedToClaimTokens<Runtime>,
 );
 /// Unchecked extrinsic type as expected by this runtime.
 pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<Address, Call, Signature, SignedExtra>;
@@ -772,7 +772,7 @@ impl_runtime_apis! {
 			add_benchmark!(params, batches, frame_system, SystemBench::<Runtime>);
 			add_benchmark!(params, batches, pallet_balances, Balances);
 			add_benchmark!(params, batches, pallet_timestamp, Timestamp);
-			add_benchmark!(params, batches, pallet_claims, Claims);
+			add_benchmark!(params, batches, pallet_dotsama_claims, Claims);
 
 			if batches.is_empty() { return Err("Benchmark not found for this pallet.".into()) }
 			Ok(batches)
