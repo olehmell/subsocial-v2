@@ -58,7 +58,8 @@ benchmarks! {
 
     add_eligible_accounts {
         let eligible_account: T::AccountId = eligible_account::<T>();
-    }: _(RawOrigin::Root, vec![ eligible_account.clone(); T::AccountsSetLimit::get() as usize ])
+        let accounts_limit = T::AccountsSetLimit::get() as usize;
+    }: _(RawOrigin::Root, vec![eligible_account.clone(); accounts_limit - 1])
     verify {
         assert_eq!(Pallet::<T>::eligible_accounts(eligible_account), true);
     }
