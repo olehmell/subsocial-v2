@@ -4,16 +4,6 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use codec::{Decode, Encode};
-use frame_support::traits::IsSubType;
-use sp_runtime::{
-    traits::{DispatchInfoOf, SignedExtension},
-    transaction_validity::{InvalidTransaction, TransactionValidity, TransactionValidityError, ValidTransaction},
-};
-use sp_std::fmt::Debug;
-
-pub use pallet::*;
-
 #[cfg(test)]
 mod mock;
 
@@ -23,11 +13,25 @@ mod tests;
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 
+pub mod weights;
+
+use codec::{Decode, Encode};
+use frame_support::traits::IsSubType;
+use sp_runtime::{
+    traits::{DispatchInfoOf, SignedExtension},
+    transaction_validity::{InvalidTransaction, TransactionValidity, TransactionValidityError, ValidTransaction},
+};
+use sp_std::fmt::Debug;
+
+pub use weights::WeightInfo;
+pub use pallet::*;
+
 #[frame_support::pallet]
 pub mod pallet {
+    use super::*;
     use frame_support::{
-        dispatch::DispatchResultWithPostInfo,
         ensure, fail,
+        dispatch::DispatchResultWithPostInfo,
         pallet_prelude::*,
         traits::{Currency, ExistenceRequirement},
         weights::{DispatchClass, Pays},
@@ -47,6 +51,9 @@ pub mod pallet {
 
         #[pallet::constant]
         type AccountsSetLimit: Get<u16>;
+
+        /// Weight information for extrinsics in this pallet.
+        type WeightInfo: WeightInfo;
     }
 
     #[pallet::pallet]
@@ -94,7 +101,7 @@ pub mod pallet {
     #[pallet::call]
     impl<T: Config> Pallet<T> {
         #[pallet::weight((
-            10_000 + T::DbWeight::get().reads_writes(2, 1),
+            <T as Config>::WeightInfo::claim_tokens(),
             DispatchClass::Normal,
             Pays::No
         ))]
@@ -123,7 +130,7 @@ pub mod pallet {
             Ok(().into())
         }
 
-        #[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1, 1))]
+        #[pallet::weight(<T as Config>::WeightInfo::set_rewards_sender())]
         pub fn set_rewards_sender(
             origin: OriginFor<T>,
             rewards_sender_opt: Option<T::AccountId>
@@ -143,7 +150,7 @@ pub mod pallet {
             Ok(().into())
         }
 
-        #[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1, 1))]
+        #[pallet::weight(<T as Config>::WeightInfo::add_eligible_accounts())]
         pub fn add_eligible_accounts(
             origin: OriginFor<T>,
             eligible_accounts: Vec<T::AccountId>

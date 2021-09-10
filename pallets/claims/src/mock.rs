@@ -107,6 +107,7 @@ impl claims::Config for Test {
     type Event = Event;
     type InitialClaimAmount = InitialClaimAmount;
     type AccountsSetLimit = AccountsSetLimit;
+    type WeightInfo = ();
 }
 
 pub(crate) type AccountId = u64;
