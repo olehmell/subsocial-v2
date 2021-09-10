@@ -1005,6 +1005,7 @@ impl pallet_claims::Config for Runtime {
     type Event = Event;
     type InitialClaimAmount = InitialClaimAmount;
     type AccountsSetLimit = AccountsSetLimit;
+    type WeightInfo = pallet_claims::weights::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {}
