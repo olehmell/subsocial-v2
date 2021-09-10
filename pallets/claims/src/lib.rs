@@ -147,7 +147,7 @@ pub mod pallet {
                 Self::deposit_event(Event::RewardsSenderRemoved());
             }
 
-            Ok(().into())
+            Ok(Pays::No.into())
         }
 
         #[pallet::weight(<T as Config>::WeightInfo::add_eligible_accounts())]
@@ -170,7 +170,7 @@ pub mod pallet {
             }
 
             Self::deposit_event(Event::EligibleAccountsAdded(accounts_len as u16));
-            Ok(().into())
+            Ok(Pays::No.into())
         }
     }
 
