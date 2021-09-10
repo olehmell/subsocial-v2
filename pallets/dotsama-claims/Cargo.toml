@@ -6,7 +6,7 @@ edition = '2018'
 license = 'GPL-3.0-only'
 homepage = 'https://subsocial.network'
 repository = 'https://github.com/dappforce/dappforce-subsocial-node'
-description = 'Pallet that allows accounts from historical snapshots to claim some tokens.'
+description = 'Pallet that allows DOT and KSM holders from historical snapshots to claim some tokens.'
 keywords = ['blockchain', 'cryptocurrency', 'social-network', 'news-feed', 'marketplace']
 categories = ['cryptography::cryptocurrencies']
 

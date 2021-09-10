@@ -565,7 +565,7 @@ construct_runtime!(
 		// New experimental pallets. Not recommended to use in production yet.
 
 		Faucets: pallet_faucets::{Module, Call, Storage, Event<T>},
-        Claims: pallet_dotsama_claims::{Module, Call, Storage, Event<T>},
+		DotsamaClaims: pallet_dotsama_claims::{Module, Call, Storage, Event<T>},
 		// SessionKeys: pallet_session_keys::{Module, Call, Storage, Event<T>},
 		// Moderation: pallet_moderation::{Module, Call, Storage, Event<T>},
 		// Donations: pallet_donations::{Module, Call, Storage, Event<T>},
@@ -772,7 +772,7 @@ impl_runtime_apis! {
 			add_benchmark!(params, batches, frame_system, SystemBench::<Runtime>);
 			add_benchmark!(params, batches, pallet_balances, Balances);
 			add_benchmark!(params, batches, pallet_timestamp, Timestamp);
-			add_benchmark!(params, batches, pallet_dotsama_claims, Claims);
+			add_benchmark!(params, batches, pallet_dotsama_claims, DotsamaClaims);
 
 			if batches.is_empty() { return Err("Benchmark not found for this pallet.".into()) }
 			Ok(batches)

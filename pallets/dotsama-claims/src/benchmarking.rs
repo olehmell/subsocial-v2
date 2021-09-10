@@ -1,4 +1,4 @@
-//! Claims pallet benchmarking.
+//! Dotsama Claims pallet benchmarking.
 
 #![cfg(feature = "runtime-benchmarks")]
 

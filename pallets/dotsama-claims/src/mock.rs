@@ -7,7 +7,7 @@ use sp_runtime::{
     traits::{BlakeTwo256, IdentityLookup}, testing::Header, Storage
 };
 
-use crate as claims;
+use crate as dotsama_claims;
 
 use frame_support::{
     parameter_types,
@@ -28,7 +28,7 @@ frame_support::construct_runtime!(
         System: system::{Module, Call, Config, Storage, Event<T>},
         Balances: pallet_balances::{Module, Call, Storage, Config<T>, Event<T>},
         Utils: pallet_utils::{Module, Event<T>},
-        Claims: claims::{Module, Call, Storage, Event<T>},
+        DotsamaClaims: dotsama_claims::{Module, Call, Storage, Event<T>},
     }
 );
 
@@ -103,7 +103,7 @@ parameter_types! {
     pub const AccountsSetLimit: u16 = 30000;
 }
 
-impl claims::Config for Test {
+impl dotsama_claims::Config for Test {
     type Event = Event;
     type InitialClaimAmount = InitialClaimAmount;
     type AccountsSetLimit = AccountsSetLimit;
@@ -158,7 +158,7 @@ impl ExtBuilder {
         ext.execute_with(|| {
             RewardsSender::<Test>::put(ACCOUNT1);
             let eligible_accounts = vec![ACCOUNT2, ACCOUNT3, ACCOUNT4];
-            assert_ok!(Claims::add_eligible_accounts(Origin::root(), eligible_accounts));
+            assert_ok!(DotsamaClaims::add_eligible_accounts(Origin::root(), eligible_accounts));
         });
 
         ext
@@ -202,7 +202,7 @@ pub(crate) fn _claim_tokens_to_account4() -> DispatchResultWithPostInfo {
 pub(crate) fn _claim_tokens(
     origin: Option<Origin>,
 ) -> DispatchResultWithPostInfo {
-    Claims::claim_tokens(
+    DotsamaClaims::claim_tokens(
         origin.unwrap_or_else(|| Origin::signed(ACCOUNT2)),
     )
 }
@@ -217,7 +217,7 @@ pub(crate) fn _set_account1_as_rewards_sender_to_account2() -> DispatchResultWit
 pub(crate) fn _set_rewards_sender(
     origin: Option<Origin>,
 ) -> DispatchResultWithPostInfo {
-    Claims::set_rewards_sender(
+    DotsamaClaims::set_rewards_sender(
         origin.unwrap_or_else(|| Origin::root()),
         Some(ACCOUNT1)
     )
@@ -239,7 +239,7 @@ pub(crate) fn _add_eligible_accounts(
     origin: Option<Origin>,
     eligible_accounts: Vec<AccountId>
 ) -> DispatchResultWithPostInfo {
-    Claims::add_eligible_accounts(
+    DotsamaClaims::add_eligible_accounts(
         origin.unwrap_or_else(|| Origin::root()),
         eligible_accounts
     )

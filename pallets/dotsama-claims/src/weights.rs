@@ -24,7 +24,7 @@
 // --heap-pages
 // 4096
 // --output
-// ./pallets/claims/src/weights.rs
+// ./pallets/dotsama-claims/src/weights.rs
 // --template
 // ./.maintain/weight-template.hbs
 
