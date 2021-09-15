@@ -131,7 +131,9 @@ pub mod pallet {
             <TokensClaimedByAccount<T>>::insert(&who, initial_amount);
 
             // TODO should be .saturating_add(initial_amount)
-            <TotalTokensClaimed<T>>::mutate(|total_amount| total_amount.unwrap_or_default() + initial_amount);
+            <TotalTokensClaimed<T>>::mutate(|total_amount| {
+                *total_amount = Some(total_amount.unwrap_or_default() + initial_amount)
+            });
 
             Self::deposit_event(Event::TokensClaimed(who, initial_amount));
             Ok(().into())
