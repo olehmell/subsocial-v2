@@ -4,7 +4,6 @@ use sp_core::H256;
 use sp_std::{
     collections::btree_set::BTreeSet,
     prelude::Vec,
-    iter::FromIterator
 };
 use sp_io::TestExternalities;
 
@@ -22,7 +21,7 @@ use pallet_permissions::{
     SpacePermission as SP,
 };
 use df_traits::{SpaceForRoles, SpaceFollowsProvider, SpaceForRolesProvider};
-use pallet_utils::{SpaceId, User, Content};
+use pallet_utils::{SpaceId, User, Content, DEFAULT_MIN_HANDLE_LEN, DEFAULT_MAX_HANDLE_LEN};
 
 use crate as roles;
 
@@ -99,8 +98,8 @@ impl pallet_balances::Config for Test {
 }
 
 parameter_types! {
-    pub const MinHandleLen: u32 = 5;
-    pub const MaxHandleLen: u32 = 50;
+    pub const MinHandleLen: u32 = DEFAULT_MIN_HANDLE_LEN;
+    pub const MaxHandleLen: u32 = DEFAULT_MAX_HANDLE_LEN;
 }
 
 impl pallet_utils::Config for Test {
@@ -291,9 +290,7 @@ pub(crate) fn _update_role(
         update.unwrap_or_else(|| self::role_update(
             Some(true),
             Some(self::updated_role_content_ipfs()),
-            Some(
-                BTreeSet::from_iter(self::permission_set_updated().into_iter())
-            )
+            Some(self::permission_set_updated().into_iter().collect())
         )),
     )
 }

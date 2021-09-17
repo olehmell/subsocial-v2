@@ -152,10 +152,10 @@ pub fn subsocial_staging_testnet_config() -> Result<ChainSpec, String> {
 }
 
 pub fn subsocial_staging_config() -> Result<ChainSpec, String> {
-    let wasm_binary = WASM_BINARY.ok_or_else(|| "Staging wasm binary not available".to_string())?;
+    let wasm_binary = WASM_BINARY.ok_or("Staging wasm binary not available".to_string())?;
 
     Ok(ChainSpec::from_genesis(
-        "Subsocial-Staging",
+        "Subsocial Staging",
         "subsocial",
         ChainType::Live,
         move || testnet_genesis(

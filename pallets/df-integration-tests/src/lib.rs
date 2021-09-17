@@ -31,6 +31,7 @@ mod tests {
     use pallet_space_ownership::Error as SpaceOwnershipError;
     use pallet_utils::{
         mock_functions::*,
+        DEFAULT_MIN_HANDLE_LEN, DEFAULT_MAX_HANDLE_LEN,
         Error as UtilsError,
         SpaceId, PostId, User, Content,
     };
@@ -118,8 +119,8 @@ mod tests {
     }
 
     parameter_types! {
-      pub const MinHandleLen: u32 = 5;
-      pub const MaxHandleLen: u32 = 50;
+      pub const MinHandleLen: u32 = DEFAULT_MIN_HANDLE_LEN;
+      pub const MaxHandleLen: u32 = DEFAULT_MAX_HANDLE_LEN;
     }
 
     impl pallet_utils::Config for TestRuntime {
@@ -288,28 +289,28 @@ mod tests {
         /// Custom ext configuration with SpaceId 1 and BlockNumber 1
         pub fn build_with_space() -> TestExternalities {
             let mut ext = Self::build();
-            ext.execute_with(|| Self::add_default_space());
+            ext.execute_with(Self::add_default_space);
             ext
         }
 
         /// Custom ext configuration with SpaceId 1, PostId 1 and BlockNumber 1
         pub fn build_with_post() -> TestExternalities {
             let mut ext = Self::build();
-            ext.execute_with(|| Self::add_post());
+            ext.execute_with(Self::add_post);
             ext
         }
 
         /// Custom ext configuration with SpaceId 1, PostId 1, PostId 2 (as comment) and BlockNumber 1
         pub fn build_with_comment() -> TestExternalities {
             let mut ext = Self::build();
-            ext.execute_with(|| Self::add_comment());
+            ext.execute_with(Self::add_comment);
             ext
         }
 
         /// Custom ext configuration with SpaceId 1-2, PostId 1 where BlockNumber 1
         pub fn build_with_post_and_two_spaces() -> TestExternalities {
             let mut ext = Self::build_with_post();
-            ext.execute_with(|| Self::add_space_with_no_handle());
+            ext.execute_with(Self::add_space_with_no_handle);
             ext
         }
 
@@ -2204,7 +2205,7 @@ mod tests {
         ExtBuilder::build_with_post().execute_with(|| {
             assert_ok!(_create_comment(None, None, Some(None), None)); // PostId 2
 
-            for parent_id in 2..11 as PostId {
+            for parent_id in 2..11_u64 {
                 assert_ok!(_create_comment(None, None, Some(Some(parent_id)), None)); // PostId N (last = 10)
             }
 

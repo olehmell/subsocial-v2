@@ -204,7 +204,7 @@ pub fn create_full<C, P, SC, B>(
     ));
 
     io.extend_with(
-        RolesApi::to_delegate(Roles::new(client.clone()),
+        RolesApi::to_delegate(Roles::new(client),
     ));
 
     io.extend_with(

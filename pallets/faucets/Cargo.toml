@@ -21,8 +21,8 @@ std = [
     'sp-std/std',
     'frame-support/std',
     'frame-system/std',
-    'pallet-timestamp/std',
     'pallet-balances/std',
+    'pallet-timestamp/std',
     'pallet-utils/std',
 ]
 

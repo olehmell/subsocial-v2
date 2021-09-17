@@ -28,6 +28,9 @@ pub mod rpc;
 pub type SpaceId = u64;
 pub type PostId = u64;
 
+pub const DEFAULT_MIN_HANDLE_LEN: u32 = 5;
+pub const DEFAULT_MAX_HANDLE_LEN: u32 = 50;
+
 #[derive(Encode, Decode, Clone, Eq, PartialEq, RuntimeDebug)]
 pub struct WhoAndWhen<T: Config> {
     pub account: T::AccountId,
@@ -53,7 +56,7 @@ pub enum User<AccountId> {
 
 impl<AccountId> User<AccountId> {
     pub fn maybe_account(self) -> Option<AccountId> {
-        return if let User::Account(account_id) = self {
+        if let User::Account(account_id) = self {
             Some(account_id)
         } else {
             None
@@ -61,7 +64,7 @@ impl<AccountId> User<AccountId> {
     }
 
     pub fn maybe_space(self) -> Option<SpaceId> {
-        return if let User::Space(space_id) = self {
+        if let User::Space(space_id) = self {
             Some(space_id)
         } else {
             None
@@ -78,14 +81,15 @@ pub enum Content {
     /// A raw vector of bytes.
     Raw(Vec<u8>),
     /// IPFS CID v0 of content.
+    #[allow(clippy::upper_case_acronyms)]
     IPFS(Vec<u8>),
     /// Hypercore protocol (former DAT) id of content.
     Hyper(Vec<u8>),
 }
 
-impl Into<Vec<u8>> for Content {
-    fn into(self) -> Vec<u8> {
-        match self {
+impl From<Content> for Vec<u8> {
+    fn from(content: Content) -> Vec<u8> {
+        match content {
             Content::None => vec![],
             Content::Raw(vec_u8) => vec_u8,
             Content::IPFS(vec_u8) => vec_u8,
