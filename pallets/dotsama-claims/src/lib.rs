@@ -58,6 +58,9 @@ pub mod pallet {
     #[pallet::generate_store(pub(super) trait Store)]
     pub struct Pallet<T>(_);
 
+    #[pallet::hooks]
+    impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {}
+
     #[pallet::storage]
     #[pallet::getter(fn rewards_sender)]
     pub(super) type RewardsSender<T: Config> = StorageValue<_, T::AccountId>;
@@ -194,7 +197,7 @@ pub mod pallet {
             return if let Some(account) = Self::rewards_sender() {
                 Ok(account)
             } else {
-                Error::<T>::NoRewardsSenderSet.into()
+                Err(Error::<T>::NoRewardsSenderSet.into())
             }
         }
     }
@@ -270,7 +273,7 @@ impl<T: Config + Send + Sync> SignedExtension for EnsureAllowedToClaimTokens<T>
             let sender = Pallet::<T>::try_get_rewards_sender()
                 .map_err(|_| InvalidTransaction::Custom(ValidityError::ClaimsAreInactive.into()))?;
 
-            Pallet::<T>::ensure_rewards_account_has_sufficient_balance(sender).
+            Pallet::<T>::ensure_rewards_account_has_sufficient_balance(&sender).
                 map_err(|_| InvalidTransaction::Custom(ValidityError::ClaimsAreInactive.into()))?;
 
             Pallet::<T>::ensure_allowed_to_claim_tokens(who)
