@@ -267,8 +267,11 @@ impl<T: Config + Send + Sync> SignedExtension for EnsureAllowedToClaimTokens<T>
         _len: usize,
     ) -> TransactionValidity {
         if let Some(Call::claim_tokens()) = call.is_sub_type() {
-            Pallet::<T>::try_get_rewards_sender()
+            let sender = Pallet::<T>::try_get_rewards_sender()
                 .map_err(|_| InvalidTransaction::Custom(ValidityError::ClaimsAreInactive.into()))?;
+
+            Pallet::<T>::ensure_rewards_account_has_sufficient_balance(sender).
+                map_err(|_| InvalidTransaction::Custom(ValidityError::ClaimsAreInactive.into()))?;
 
             Pallet::<T>::ensure_allowed_to_claim_tokens(who)
                 .map_err(|_| InvalidTransaction::Custom(ValidityError::NotAllowedToClaim.into()))?;
