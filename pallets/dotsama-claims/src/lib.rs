@@ -12,7 +12,6 @@ mod tests;
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
-
 pub mod weights;
 
 use codec::{Decode, Encode};
@@ -22,16 +21,15 @@ use sp_runtime::{
     transaction_validity::{InvalidTransaction, TransactionValidity, TransactionValidityError, ValidTransaction},
 };
 use sp_std::fmt::Debug;
-
 pub use weights::WeightInfo;
+
 pub use pallet::*;
 
 #[frame_support::pallet]
 pub mod pallet {
     use super::*;
     use frame_support::{
-        ensure, fail,
-        dispatch::DispatchResultWithPostInfo,
+        ensure, dispatch::{DispatchResult, DispatchResultWithPostInfo},
         pallet_prelude::*,
         traits::{Currency, ExistenceRequirement},
         weights::{DispatchClass, Pays},
@@ -95,9 +93,6 @@ pub mod pallet {
         TokensAlreadyClaimed,
     }
 
-    #[pallet::hooks]
-    impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {}
-
     #[pallet::call]
     impl<T: Config> Pallet<T> {
         #[pallet::weight((
@@ -108,13 +103,7 @@ pub mod pallet {
         pub fn claim_tokens(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
 
-            let rewards_sender: T::AccountId;
-
-            if let Some(account) = Self::rewards_sender() {
-                rewards_sender = account;
-            } else {
-                fail!(Error::<T>::NoRewardsSenderSet);
-            }
+            let rewards_sender = Self::try_get_rewards_sender()?;
 
             Self::ensure_allowed_to_claim_tokens(&who)?;
             Self::ensure_rewards_account_has_sufficient_balance(&rewards_sender)?;
@@ -125,7 +114,7 @@ pub mod pallet {
                 &rewards_sender,
                 &who,
                 initial_amount,
-                ExistenceRequirement::KeepAlive
+                ExistenceRequirement::KeepAlive,
             )?;
 
             <TokensClaimedByAccount<T>>::insert(&who, initial_amount);
@@ -162,17 +151,14 @@ pub mod pallet {
         #[pallet::weight(<T as Config>::WeightInfo::add_eligible_accounts())]
         pub fn add_eligible_accounts(
             origin: OriginFor<T>,
-            eligible_accounts: Vec<T::AccountId>
+            eligible_accounts: Vec<T::AccountId>,
         ) -> DispatchResultWithPostInfo {
             ensure_root(origin)?;
 
             let accounts_len = eligible_accounts.len();
-            let accounts_set_limit = T::AccountsSetLimit::get();
+            let accounts_set_limit = T::AccountsSetLimit::get() as usize;
 
-            ensure!(
-                accounts_len < accounts_set_limit.into(),
-                Error::<T>::AddingTooManyAccountsAtOnce
-            );
+            ensure!(accounts_len < accounts_set_limit, Error::<T>::AddingTooManyAccountsAtOnce);
 
             for eligible_account in eligible_accounts {
                 <EligibleAccounts<T>>::insert(&eligible_account, true);
@@ -184,15 +170,15 @@ pub mod pallet {
     }
 
     impl<T: Config> Pallet<T> {
-        pub(super) fn ensure_allowed_to_claim_tokens(who: &T::AccountId) -> DispatchResultWithPostInfo {
+        pub(super) fn ensure_allowed_to_claim_tokens(who: &T::AccountId) -> DispatchResult {
             ensure!(Self::eligible_accounts(who), Error::<T>::AccountNotEligible);
             ensure!(Self::tokens_claimed_by_account(who).is_zero(), Error::<T>::TokensAlreadyClaimed);
-            Ok(().into())
+            Ok(())
         }
 
         pub(super) fn ensure_rewards_account_has_sufficient_balance(
             rewards_sender: &T::AccountId
-        ) -> DispatchResultWithPostInfo {
+        ) -> DispatchResult {
             ensure!(
                 T::Currency::free_balance(rewards_sender) >=
                 
@@ -201,7 +187,15 @@ pub mod pallet {
                 
                 Error::<T>::RewardsSenderHasInsufficientBalance
              );
-            Ok(().into())
+            Ok(())
+        }
+
+        pub(super) fn try_get_rewards_sender() -> Result<T::AccountId, DispatchError> {
+            return if let Some(account) = Self::rewards_sender() {
+                Ok(account)
+            } else {
+                Error::<T>::NoRewardsSenderSet.into()
+            }
         }
     }
 }
@@ -240,7 +234,8 @@ impl<T: Config + Send + Sync> EnsureAllowedToClaimTokens<T>
 
 #[repr(u8)]
 enum ValidityError {
-    NotAllowedToClaim = 0,
+    ClaimsAreInactive = 0,
+    NotAllowedToClaim = 1,
 }
 
 impl From<ValidityError> for u8 {
@@ -271,11 +266,12 @@ impl<T: Config + Send + Sync> SignedExtension for EnsureAllowedToClaimTokens<T>
         _info: &DispatchInfoOf<Self::Call>,
         _len: usize,
     ) -> TransactionValidity {
-        if let Some(local_call) = call.is_sub_type() {
-            if let Call::claim_tokens() = local_call {
-                Pallet::<T>::ensure_allowed_to_claim_tokens(who)
-                    .map_err(|_| InvalidTransaction::Custom(ValidityError::NotAllowedToClaim.into()))?;
-            }
+        if let Some(Call::claim_tokens()) = call.is_sub_type() {
+            Pallet::<T>::try_get_rewards_sender()
+                .map_err(|_| InvalidTransaction::Custom(ValidityError::ClaimsAreInactive.into()))?;
+
+            Pallet::<T>::ensure_allowed_to_claim_tokens(who)
+                .map_err(|_| InvalidTransaction::Custom(ValidityError::NotAllowedToClaim.into()))?;
         }
         Ok(ValidTransaction::default())
     }
