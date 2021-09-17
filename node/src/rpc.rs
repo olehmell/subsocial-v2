@@ -204,7 +204,7 @@ pub fn create_full<C, P, SC, B>(
     ));
 
     io.extend_with(
-        RolesApi::to_delegate(Roles::new(client),
+        RolesApi::to_delegate(Roles::new(client.clone()),
     ));
 
     io.extend_with(
@@ -212,7 +212,7 @@ pub fn create_full<C, P, SC, B>(
     ));
 
     io.extend_with(
-        SpaceFollowsApi::to_delegate(SpaceFollows::new(client.clone()),
+        SpaceFollowsApi::to_delegate(SpaceFollows::new(client),
     ));
 
     io
