@@ -25,7 +25,6 @@ std = [
     'pallet-post-history/std',
     'pallet-posts/std',
     'pallet-profile-follows/std',
-    'pallet-profile-history/std',
     'pallet-profiles/std',
     'pallet-reactions/std',
     'pallet-roles/std',
@@ -54,7 +53,6 @@ pallet-permissions = { default-features = false, path = '../permissions' }
 pallet-post-history = { default-features = false, path = '../post-history' }
 pallet-posts = { default-features = false, path = '../posts' }
 pallet-profile-follows = { default-features = false, path = '../profile-follows' }
-pallet-profile-history = { default-features = false, path = '../profile-history' }
 pallet-profiles = { default-features = false, path = '../profiles' }
 pallet-reactions = { default-features = false, path = '../reactions' }
 pallet-roles = { default-features = false, path = '../roles' }

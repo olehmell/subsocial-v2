@@ -1180,7 +1180,6 @@ dependencies = [
  "pallet-post-history",
  "pallet-posts",
  "pallet-profile-follows",
- "pallet-profile-history",
  "pallet-profiles",
  "pallet-reactions",
  "pallet-roles",
@@ -4096,19 +4095,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pallet-profile-history"
-version = "0.7.0"
-dependencies = [
- "frame-support",
- "frame-system",
- "pallet-profiles",
- "pallet-utils",
- "parity-scale-codec",
- "sp-runtime",
- "sp-std",
-]
-
-[[package]]
 name = "pallet-profiles"
 version = "0.7.0"
 dependencies = [
@@ -4116,6 +4102,7 @@ dependencies = [
  "frame-system",
  "impl-trait-for-tuples 0.1.3",
  "pallet-permissions",
+ "pallet-spaces",
  "pallet-utils",
  "parity-scale-codec",
  "serde",
@@ -4295,6 +4282,7 @@ dependencies = [
  "df-traits",
  "frame-support",
  "frame-system",
+ "pallet-profiles",
  "pallet-spaces",
  "pallet-utils",
  "parity-scale-codec",
@@ -8048,7 +8036,6 @@ dependencies = [
  "pallet-post-history",
  "pallet-posts",
  "pallet-profile-follows",
- "pallet-profile-history",
  "pallet-profiles",
  "pallet-proxy",
  "pallet-randomness-collective-flip",

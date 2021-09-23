@@ -925,12 +925,7 @@ parameter_types! {}
 
 impl pallet_profiles::Config for Runtime {
 	type Event = Event;
-	type AfterProfileUpdated = ProfileHistory;
 }
-
-parameter_types! {}
-
-impl pallet_profile_history::Config for Runtime {}
 
 parameter_types! {}
 
@@ -1062,7 +1057,6 @@ construct_runtime!(
 		PostHistory: pallet_post_history::{Module, Storage},
 		ProfileFollows: pallet_profile_follows::{Module, Call, Storage, Event<T>},
 		Profiles: pallet_profiles::{Module, Call, Storage, Event<T>},
-		ProfileHistory: pallet_profile_history::{Module, Storage},
 		Reactions: pallet_reactions::{Module, Call, Storage, Event<T>},
 		Roles: pallet_roles::{Module, Call, Storage, Event<T>},
 		SpaceFollows: pallet_space_follows::{Module, Call, Storage, Event<T>},
@@ -1462,11 +1456,11 @@ impl_runtime_apis! {
     	}
     }
 
-	impl profiles_runtime_api::ProfilesApi<Block, AccountId, BlockNumber> for Runtime
+	impl profiles_runtime_api::ProfilesApi<Block, AccountId> for Runtime
 	{
 		fn get_social_accounts_by_ids(
             account_ids: Vec<AccountId>
-        ) -> Vec<FlatSocialAccount<AccountId, BlockNumber>> {
+        ) -> Vec<FlatSocialAccount<AccountId>> {
         	Profiles::get_social_accounts_by_ids(account_ids)
         }
 	}
