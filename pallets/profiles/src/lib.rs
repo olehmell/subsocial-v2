@@ -2,7 +2,8 @@
 
 use codec::{Decode, Encode};
 use frame_support::{
-    decl_error, decl_event, decl_module, decl_storage, ensure,
+    decl_error, decl_event, decl_module, decl_storage,
+    ensure,
     dispatch::DispatchResult,
     traits::Get
 };
@@ -10,46 +11,46 @@ use sp_runtime::RuntimeDebug;
 use sp_std::prelude::*;
 use frame_system::{self as system, ensure_signed};
 
-use pallet_utils::{Module as Utils, WhoAndWhen, Content};
+use pallet_utils::{SpaceId};
+use pallet_spaces::{Module as Spaces};
 
 pub mod rpc;
 
 #[derive(Encode, Decode, Clone, Eq, PartialEq, RuntimeDebug)]
-pub struct SocialAccount<T: Config> {
+pub struct SocialAccount {
     pub followers_count: u32,
     pub following_accounts_count: u16,
     pub following_spaces_count: u16,
     pub reputation: u32,
-    pub profile: Option<Profile<T>>,
+    pub profile: Option<SpaceId>,
 }
 
-#[derive(Encode, Decode, Clone, Eq, PartialEq, RuntimeDebug)]
-pub struct Profile<T: Config> {
-    pub created: WhoAndWhen<T>,
-    pub updated: Option<WhoAndWhen<T>>,
-    pub content: Content
-}
-
-#[derive(Encode, Decode, Clone, Eq, PartialEq, RuntimeDebug)]
-pub struct ProfileUpdate {
-    pub content: Option<Content>,
-}
+// #[derive(Encode, Decode, Clone, Eq, PartialEq, RuntimeDebug)]
+// pub struct Profile<T: Config> {
+//     pub created: WhoAndWhen<T>,
+//     pub updated: Option<WhoAndWhen<T>>,
+//     pub content: Content
+// }
+//
+// #[derive(Encode, Decode, Clone, Eq, PartialEq, RuntimeDebug)]
+// pub struct ProfileUpdate {
+//     pub content: Option<Content>,
+// }
 
 /// The pallet's configuration trait.
 pub trait Config: system::Config
     + pallet_utils::Config
+    + pallet_spaces::Config
 {
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as system::Config>::Event>;
-
-    type AfterProfileUpdated: AfterProfileUpdated<Self>;
 }
 
 // This pallet's storage items.
 decl_storage! {
     trait Store for Module<T: Config> as ProfilesModule {
         pub SocialAccountById get(fn social_account_by_id):
-            map hasher(blake2_128_concat) T::AccountId => Option<SocialAccount<T>>;
+            map hasher(blake2_128_concat) T::AccountId => Option<SocialAccount>;
     }
 }
 
@@ -57,8 +58,8 @@ decl_event!(
     pub enum Event<T> where
         <T as system::Config>::AccountId,
     {
-        ProfileCreated(AccountId),
-        ProfileUpdated(AccountId),
+      SetProfile(AccountId, SpaceId),
+      RemoveProfile(AccountId),
     }
 );
 
@@ -66,13 +67,11 @@ decl_error! {
     pub enum Error for Module<T: Config> {
         /// Social account was not found by id.
         SocialAccountNotFound,
-        /// Profile is already created for this account.
-        ProfileAlreadyCreated,
-        /// Nothing to update in a profile.
-        NoUpdatesForProfile,
         /// Account has no profile yet.
         AccountHasNoProfile,
-    }
+        /// Profile already set
+        ProfileAlreadySet
+  }
 }
 
 decl_module! {
@@ -85,64 +84,34 @@ decl_module! {
     fn deposit_event() = default;
 
     #[weight = 100_000 + T::DbWeight::get().reads_writes(1, 2)]
-    pub fn create_profile(origin, content: Content) -> DispatchResult {
+    pub fn set_profile(origin, space_id: SpaceId) -> DispatchResult {
       let owner = ensure_signed(origin)?;
 
-      Utils::<T>::is_valid_content(content.clone())?;
-
       let mut social_account = Self::get_or_new_social_account(owner.clone());
-      ensure!(social_account.profile.is_none(), Error::<T>::ProfileAlreadyCreated);
 
-      social_account.profile = Some(
-        Profile {
-          created: WhoAndWhen::<T>::new(owner.clone()),
-          updated: None,
-          content
-        }
-      );
+      ensure!(social_account.profile.is_none(), Error::<T>::ProfileAlreadySet);
+
+      let space = Spaces::<T>::require_space(space_id)?;
+      space.ensure_space_owner(owner.clone())?;
+
+      social_account.profile = Some(space_id);
+
       <SocialAccountById<T>>::insert(owner.clone(), social_account);
 
-      Self::deposit_event(RawEvent::ProfileCreated(owner));
+      Self::deposit_event(RawEvent::SetProfile(owner, space_id));
       Ok(())
     }
 
     #[weight = 100_000 + T::DbWeight::get().reads_writes(1, 2)]
-    pub fn update_profile(origin, update: ProfileUpdate) -> DispatchResult {
+    pub fn remove_profile(origin) -> DispatchResult {
       let owner = ensure_signed(origin)?;
 
-      let has_updates = update.content.is_some();
-
-      ensure!(has_updates, Error::<T>::NoUpdatesForProfile);
-
-      let mut social_account = Self::social_account_by_id(owner.clone()).ok_or(Error::<T>::SocialAccountNotFound)?;
-      let mut profile = social_account.profile.ok_or(Error::<T>::AccountHasNoProfile)?;
-      let mut is_update_applied = false;
-      let mut old_data = ProfileUpdate::default();
-
-      if let Some(content) = update.content {
-        if content != profile.content {
-          Utils::<T>::is_valid_content(content.clone())?;
-          old_data.content = Some(profile.content);
-          profile.content = content;
-          is_update_applied = true;
-        }
-      }
-
-      if is_update_applied {
-        profile.updated = Some(WhoAndWhen::<T>::new(owner.clone()));
-        social_account.profile = Some(profile.clone());
-
-        <SocialAccountById<T>>::insert(owner.clone(), social_account);
-        T::AfterProfileUpdated::after_profile_updated(owner.clone(), &profile, old_data);
-
-        Self::deposit_event(RawEvent::ProfileUpdated(owner));
-      }
-      Ok(())
+      Self::try_remove_profile(owner)
     }
   }
 }
 
-impl <T: Config> SocialAccount<T> {
+impl SocialAccount {
     pub fn inc_followers(&mut self) {
         self.followers_count = self.followers_count.saturating_add(1);
     }
@@ -168,7 +137,7 @@ impl <T: Config> SocialAccount<T> {
     }
 }
 
-impl<T: Config> SocialAccount<T> {
+impl SocialAccount {
     #[allow(clippy::comparison_chain)]
     pub fn change_reputation(&mut self, diff: i16) {
         if diff > 0 {
@@ -179,16 +148,8 @@ impl<T: Config> SocialAccount<T> {
     }
 }
 
-impl Default for ProfileUpdate {
-    fn default() -> Self {
-        ProfileUpdate {
-            content: None
-        }
-    }
-}
-
 impl<T: Config> Module<T> {
-    pub fn get_or_new_social_account(account: T::AccountId) -> SocialAccount<T> {
+    pub fn get_or_new_social_account(account: T::AccountId) -> SocialAccount {
         Self::social_account_by_id(account).unwrap_or(
             SocialAccount {
                 followers_count: 0,
@@ -199,9 +160,17 @@ impl<T: Config> Module<T> {
             }
         )
     }
-}
 
-#[impl_trait_for_tuples::impl_for_tuples(10)]
-pub trait AfterProfileUpdated<T: Config> {
-    fn after_profile_updated(account: T::AccountId, post: &Profile<T>, old_data: ProfileUpdate);
+    pub fn try_remove_profile(owner: T::AccountId) -> DispatchResult {
+      let mut social_account = Self::social_account_by_id(owner.clone()).ok_or(Error::<T>::SocialAccountNotFound)?;
+
+      ensure!(social_account.profile.is_some(), Error::<T>::AccountHasNoProfile);
+
+      social_account.profile = None;
+
+      <SocialAccountById<T>>::insert(owner.clone(), social_account);
+
+      Self::deposit_event(RawEvent::RemoveProfile(owner));
+      Ok(())
+    }
 }

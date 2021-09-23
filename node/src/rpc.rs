@@ -96,7 +96,7 @@ pub fn create_full<C, P, SC, B>(
     C::Api: pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>,
     C::Api: posts_rpc::PostsRuntimeApi<Block, AccountId, BlockNumber>,
     C::Api: profile_follows_rpc::ProfileFollowsRuntimeApi<Block, AccountId>,
-    C::Api: profiles_rpc::ProfilesRuntimeApi<Block, AccountId, BlockNumber>,
+    C::Api: profiles_rpc::ProfilesRuntimeApi<Block, AccountId>,
     C::Api: reactions_rpc::ReactionsRuntimeApi<Block, AccountId, BlockNumber>,
     C::Api: roles_rpc::RolesRuntimeApi<Block, AccountId>,
     C::Api: space_follows_rpc::SpaceFollowsRuntimeApi<Block, AccountId>,
