@@ -17,7 +17,7 @@ pub mod weights;
 use codec::{Decode, Encode};
 use frame_support::traits::IsSubType;
 use sp_runtime::{
-    traits::{DispatchInfoOf, SignedExtension},
+    traits::{DispatchInfoOf, SignedExtension, Saturating},
     transaction_validity::{InvalidTransaction, TransactionValidity, TransactionValidityError, ValidTransaction},
 };
 use sp_std::fmt::Debug;
@@ -29,8 +29,8 @@ pub use pallet::*;
 pub mod pallet {
     use super::*;
     use frame_support::{
-        ensure, dispatch::{DispatchResult, DispatchResultWithPostInfo},
-        pallet_prelude::*,
+        ensure, pallet_prelude::*,
+        dispatch::{DispatchResult, DispatchResultWithPostInfo},
         traits::{Currency, ExistenceRequirement},
         weights::{DispatchClass, Pays},
     };
@@ -48,7 +48,7 @@ pub mod pallet {
         type InitialClaimAmount: Get<BalanceOf<Self>>;
 
         #[pallet::constant]
-        type AccountsSetLimit: Get<u16>;
+        type AccountsSetLimit: Get<u32>;
 
         /// Weight information for extrinsics in this pallet.
         type WeightInfo: WeightInfo;
@@ -124,11 +124,11 @@ pub mod pallet {
 
             // TODO should be .saturating_add(initial_amount)
             <TotalTokensClaimed<T>>::mutate(|total_amount| {
-                *total_amount = Some(total_amount.unwrap_or_default() + initial_amount)
+                *total_amount = Some(total_amount.unwrap_or_default().saturating_add(initial_amount))
             });
 
             Self::deposit_event(Event::TokensClaimed(who, initial_amount));
-            Ok(().into())
+            Ok(Default::default())
         }
 
         #[pallet::weight(<T as Config>::WeightInfo::set_rewards_sender())]
@@ -183,13 +183,10 @@ pub mod pallet {
             rewards_sender: &T::AccountId
         ) -> DispatchResult {
             ensure!(
-                T::Currency::free_balance(rewards_sender) >=
-                
-                // TODO should be .saturating_add(T::InitialClaimAmount::get())
-                T::Currency::minimum_balance() + T::InitialClaimAmount::get(),
-                
+                T::Currency::free_balance(rewards_sender)
+                >= T::Currency::minimum_balance().saturating_add(T::InitialClaimAmount::get()),
                 Error::<T>::RewardsSenderHasInsufficientBalance
-             );
+            );
             Ok(())
         }
 

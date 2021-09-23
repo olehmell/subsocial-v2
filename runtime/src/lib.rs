@@ -436,7 +436,7 @@ impl pallet_spaces::Config for Runtime {
 
 parameter_types! {
     pub InitialClaimAmount: Balance = 10 * DOLLARS;
-    pub AccountsSetLimit: u16 = 30_000;
+    pub AccountsSetLimit: u32 = 30_000;
 }
 
 impl pallet_dotsama_claims::Config for Runtime {
