@@ -29,9 +29,10 @@ funty = { version = "=1.1.0", default-features = false }
 static_assertions = "1.1.0"
 
 # Local dependencies
+#pallet-donations = { default-features = false, path = '../pallets/donations' }
+
 pallet-dotsama-claims = { default-features = false, path = '../pallets/dotsama-claims' }
 
-#pallet-donations = { default-features = false, path = '../pallets/donations' }
 pallet-faucets = { default-features = false, path = '../pallets/faucets' }
 #pallet-moderation = { default-features = false, path = '../pallets/moderation' }
 pallet-permissions = { default-features = false, path = '../pallets/permissions' }
@@ -109,8 +110,8 @@ runtime-benchmarks = [
     'frame-system/runtime-benchmarks',
     'pallet-balances/runtime-benchmarks',
     'pallet-timestamp/runtime-benchmarks',
-    'pallet-dotsama-claims/runtime-benchmarks',
     'sp-runtime/runtime-benchmarks',
+    'pallet-dotsama-claims/runtime-benchmarks',
 ]
 std = [
     'codec/std',
@@ -121,7 +122,6 @@ std = [
     'frame-system-rpc-runtime-api/std',
     'pallet-aura/std',
     'pallet-balances/std',
-    'pallet-dotsama-claims/std',
     'pallet-grandpa/std',
     'pallet-randomness-collective-flip/std',
     'pallet-scheduler/std',
@@ -144,6 +144,7 @@ std = [
     'sp-io/std',
     'subsocial-primitives/std',
 #    'pallet-donations/std',
+    'pallet-dotsama-claims/std',
     'pallet-faucets/std',
 #    'pallet-moderation/std',
     'pallet-permissions/std',

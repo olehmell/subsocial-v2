@@ -144,7 +144,7 @@ impl ExtBuilder {
         Self::build_with_custom_balances(Self::configure_balances(insufficient_balance))
     }
 
-    pub(crate) fn build_with_rewards_account_and_setup_eligible_accounts() -> TestExternalities {
+    pub(crate) fn build_with_rewards_sender_and_setup_eligible_accounts() -> TestExternalities {
         let mut ext = Self::build();
         ext.execute_with(|| {
             RewardsSender::<Test>::put(REWARDS_SENDER);
@@ -176,11 +176,11 @@ pub(crate) const ALT_REWARDS_SENDER: AccountId = 11;
 pub(crate) const ACCOUNT1: AccountId = 1;
 pub(crate) const ACCOUNT2: AccountId = 2;
 
-pub(crate) fn _claim_tokens_from_account1() -> DispatchResultWithPostInfo {
+pub(crate) fn _claim_tokens_to_account1() -> DispatchResultWithPostInfo {
     _claim_tokens(None)
 }
 
-pub(crate) fn _claim_tokens_from_account2() -> DispatchResultWithPostInfo {
+pub(crate) fn _claim_tokens_to_account2() -> DispatchResultWithPostInfo {
     _claim_tokens(Some(Origin::signed(ACCOUNT2)))
 }
 
