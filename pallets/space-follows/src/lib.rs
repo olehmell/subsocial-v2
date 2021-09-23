@@ -109,7 +109,7 @@ impl<T: Config> Module<T> {
     fn add_space_follower(follower: T::AccountId, space: &mut Space<T>) -> DispatchResult {
         space.inc_followers();
 
-        let mut social_account = Profiles::get_or_new_social_account(follower.clone());
+        let mut social_account = Profiles::<T>::get_or_new_social_account(follower.clone());
         social_account.inc_following_spaces();
 
         T::BeforeSpaceFollowed::before_space_followed(
@@ -130,7 +130,7 @@ impl<T: Config> Module<T> {
         let space = &mut Spaces::require_space(space_id)?;
         space.dec_followers();
 
-        let mut social_account = Profiles::social_account_by_id(follower.clone()).ok_or(Error::<T>::SocialAccountNotFound)?;
+        let mut social_account = Profiles::<T>::social_account_by_id(follower.clone()).ok_or(Error::<T>::SocialAccountNotFound)?;
         social_account.dec_following_spaces();
 
         T::BeforeSpaceUnfollowed::before_space_unfollowed(follower.clone(), space)?;

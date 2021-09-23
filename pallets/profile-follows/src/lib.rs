@@ -85,8 +85,8 @@ decl_module! {
       ensure!(!<AccountFollowedByAccount<T>>::contains_key((follower.clone(), account.clone())),
         Error::<T>::AlreadyAccountFollower);
 
-      let mut follower_account = Profiles::get_or_new_social_account(follower.clone());
-      let mut followed_account = Profiles::get_or_new_social_account(account.clone());
+      let mut follower_account = Profiles::<T>::get_or_new_social_account(follower.clone());
+      let mut followed_account = Profiles::<T>::get_or_new_social_account(account.clone());
 
       follower_account.inc_following_accounts();
       followed_account.inc_followers();
@@ -111,8 +111,8 @@ decl_module! {
       ensure!(follower != account, Error::<T>::AccountCannotUnfollowItself);
       ensure!(<AccountFollowedByAccount<T>>::contains_key((follower.clone(), account.clone())), Error::<T>::NotAccountFollower);
 
-      let mut follower_account = Profiles::social_account_by_id(follower.clone()).ok_or(Error::<T>::FollowerAccountNotFound)?;
-      let mut followed_account = Profiles::social_account_by_id(account.clone()).ok_or(Error::<T>::FollowedAccountNotFound)?;
+      let mut follower_account = Profiles::<T>::social_account_by_id(follower.clone()).ok_or(Error::<T>::FollowerAccountNotFound)?;
+      let mut followed_account = Profiles::<T>::social_account_by_id(account.clone()).ok_or(Error::<T>::FollowedAccountNotFound)?;
 
       follower_account.dec_following_accounts();
       followed_account.dec_followers();
