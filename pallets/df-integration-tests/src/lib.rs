@@ -2609,6 +2609,14 @@ mod tests {
     }
 
     #[test]
+    fn set_profile_should_fail_when_space_now_found() {
+        ExtBuilder::build().execute_with(|| {
+            // AccountId 1
+            assert_noop!(_create_default_profile(), SpacesError::<TestRuntime>::SpaceNotFound);
+        });
+    }
+
+    #[test]
     fn remove_profile_should_work() {
         ExtBuilder::build_with_space().execute_with(|| {
             assert_ok!(_create_default_profile());
@@ -2629,16 +2637,6 @@ mod tests {
             assert_noop!(_remove_profile(
                 None,
             ), ProfilesError::<TestRuntime>::SocialAccountNotFound);
-        });
-    }
-
-    #[test]
-    fn remove_profile_should_fail_when_account_has_no_profile() {
-        ExtBuilder::build().execute_with(|| {
-            assert_ok!(ProfileFollows::follow_account(Origin::signed(ACCOUNT1), ACCOUNT2));
-            assert_noop!(_remove_profile(
-                None,
-            ), ProfilesError::<TestRuntime>::AccountHasNoProfile);
         });
     }
 

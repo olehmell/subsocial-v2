@@ -58,8 +58,8 @@ decl_event!(
     pub enum Event<T> where
         <T as system::Config>::AccountId,
     {
-      SetProfile(AccountId, SpaceId),
-      RemoveProfile(AccountId),
+      ProfileSet(AccountId, SpaceId),
+      ProfileRemoved(AccountId),
     }
 );
 
@@ -67,8 +67,6 @@ decl_error! {
     pub enum Error for Module<T: Config> {
         /// Social account was not found by id.
         SocialAccountNotFound,
-        /// Account has no profile yet.
-        AccountHasNoProfile,
         /// Profile already set
         ProfileAlreadySet
   }
@@ -98,7 +96,7 @@ decl_module! {
 
       <SocialAccountById<T>>::insert(owner.clone(), social_account);
 
-      Self::deposit_event(RawEvent::SetProfile(owner, space_id));
+      Self::deposit_event(RawEvent::ProfileSet(owner, space_id));
       Ok(())
     }
 
@@ -106,7 +104,7 @@ decl_module! {
     pub fn remove_profile(origin) -> DispatchResult {
       let owner = ensure_signed(origin)?;
 
-      Self::try_remove_profile(owner)
+      Self::try_remove_profile(&owner)
     }
   }
 }
@@ -161,16 +159,16 @@ impl<T: Config> Module<T> {
         )
     }
 
-    pub fn try_remove_profile(owner: T::AccountId) -> DispatchResult {
-      let mut social_account = Self::social_account_by_id(owner.clone()).ok_or(Error::<T>::SocialAccountNotFound)?;
+    pub fn try_remove_profile(owner: &T::AccountId) -> DispatchResult {
+      let mut social_account = Self::social_account_by_id(&owner).ok_or(Error::<T>::SocialAccountNotFound)?;
 
-      ensure!(social_account.profile.is_some(), Error::<T>::AccountHasNoProfile);
+      if social_account.profile.is_some() {
+        social_account.profile = None;
+        <SocialAccountById<T>>::insert(owner, social_account);
 
-      social_account.profile = None;
+        Self::deposit_event(RawEvent::ProfileRemoved(owner.clone()));
+      }
 
-      <SocialAccountById<T>>::insert(owner.clone(), social_account);
-
-      Self::deposit_event(RawEvent::RemoveProfile(owner));
       Ok(())
     }
 }
