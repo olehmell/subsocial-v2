@@ -1,4 +1,3 @@
-// Creating mock runtime here
 use super::*;
 
 use sp_core::H256;
@@ -86,21 +85,16 @@ impl pallet_balances::Config for Test {
     type MaxLocks = ();
 }
 
-parameter_types! {
-    pub const MinHandleLen: u32 = 5;
-    pub const MaxHandleLen: u32 = 50;
-}
-
 impl pallet_utils::Config for Test {
     type Event = Event;
     type Currency = Balances;
-    type MinHandleLen = MinHandleLen;
-    type MaxHandleLen = MaxHandleLen;
+    type MinHandleLen = ();
+    type MaxHandleLen = ();
 }
 
 parameter_types! {
     pub const InitialClaimAmount: Balance = 10;
-    pub const AccountsSetLimit: u16 = 30000;
+    pub const AccountsSetLimit: u32 = 30_000;
 }
 
 impl dotsama_claims::Config for Test {
@@ -117,15 +111,15 @@ pub(crate) type Balance = u64;
 pub struct ExtBuilder;
 
 impl ExtBuilder {
-    fn build_configure_balances_fn(balance: Balance) -> impl Fn(&mut Storage) {
+    fn configure_balances(balance: Balance) -> impl Fn(&mut Storage) {
         move |storage: &mut Storage| {
             let _ = pallet_balances::GenesisConfig::<Test> {
-                balances: [ACCOUNT1].iter().cloned().map(|k| (k, balance)).collect(),
+                balances: [REWARDS_SENDER, ALT_REWARDS_SENDER].iter().cloned().map(|k| (k, balance)).collect(),
             }.assimilate_storage(storage);
         }
     }
 
-    fn _build<F>(configure_balances: F) -> TestExternalities
+    fn build_with_custom_balances<F>(configure_balances: F) -> TestExternalities
         where F: Fn(&mut Storage)
     {
         let storage = &mut system::GenesisConfig::default()
@@ -140,41 +134,34 @@ impl ExtBuilder {
         ext
     }
 
-    pub fn build() -> TestExternalities
-    {
+    pub(crate) fn build() -> TestExternalities {
         let sufficient_balance = InitialClaimAmount::get() + ExistentialDeposit::get();
-        Self::_build(Self::build_configure_balances_fn(sufficient_balance))
+        Self::build_with_custom_balances(Self::configure_balances(sufficient_balance))
     }
 
-    pub fn build_with_insufficient_balances_for_account1() -> TestExternalities
-    {
+    pub(crate) fn build_with_insufficient_balances_for_rewards_sender() -> TestExternalities {
         let insufficient_balance = ExistentialDeposit::get() + InitialClaimAmount::get() - 1;
-        Self::_build(Self::build_configure_balances_fn(insufficient_balance))
+        Self::build_with_custom_balances(Self::configure_balances(insufficient_balance))
     }
 
-    pub(crate) fn build_with_account1_as_rewards_account_and_eligible_accounts() -> TestExternalities
-    {
+    pub(crate) fn build_with_rewards_account_and_setup_eligible_accounts() -> TestExternalities {
         let mut ext = Self::build();
         ext.execute_with(|| {
-            RewardsSender::<Test>::put(ACCOUNT1);
-            let eligible_accounts = vec![ACCOUNT2, ACCOUNT3, ACCOUNT4];
+            RewardsSender::<Test>::put(REWARDS_SENDER);
+            let eligible_accounts = vec![ACCOUNT1, ACCOUNT2];
             assert_ok!(DotsamaClaims::add_eligible_accounts(Origin::root(), eligible_accounts));
         });
 
         ext
     }
 
-    fn _build_with_account1_as_rewards_account(build: fn () -> TestExternalities) -> TestExternalities {
-        let mut ext = build();
+    pub(crate) fn build_with_rewards_account() -> TestExternalities {
+        let mut ext = Self::build();
         ext.execute_with(|| {
-            RewardsSender::<Test>::put(ACCOUNT1);
+            assert_ok!(_set_rewards_sender(None, Some(REWARDS_SENDER).into()));
         });
 
         ext
-    }
-
-    pub fn build_with_rewards_account() -> TestExternalities {
-        Self::_build_with_account1_as_rewards_account(Self::build)
     }
 
     // pub fn build_with_insufficient_balances_and_rewards_account() -> TestExternalities {
@@ -183,56 +170,52 @@ impl ExtBuilder {
 
 }
 
-pub(crate) const ACCOUNT1: AccountId = 11;
-pub(crate) const ACCOUNT2: AccountId = 12;
-pub(crate) const ACCOUNT3: AccountId = 13;
-pub(crate) const ACCOUNT4: AccountId = 14;
+pub(crate) const REWARDS_SENDER: AccountId = 10;
+pub(crate) const ALT_REWARDS_SENDER: AccountId = 11;
 
-pub(crate) fn _claim_tokens_to_account2() -> DispatchResultWithPostInfo {
+pub(crate) const ACCOUNT1: AccountId = 1;
+pub(crate) const ACCOUNT2: AccountId = 2;
+
+pub(crate) fn _claim_tokens_from_account1() -> DispatchResultWithPostInfo {
     _claim_tokens(None)
 }
-pub(crate) fn _claim_tokens_to_account3() -> DispatchResultWithPostInfo {
-    _claim_tokens(Some(Origin::signed(ACCOUNT3)))
-}
-pub(crate) fn _claim_tokens_to_account4() -> DispatchResultWithPostInfo {
-    _claim_tokens(Some(Origin::signed(ACCOUNT4)))
-}
 
+pub(crate) fn _claim_tokens_from_account2() -> DispatchResultWithPostInfo {
+    _claim_tokens(Some(Origin::signed(ACCOUNT2)))
+}
 
 pub(crate) fn _claim_tokens(
     origin: Option<Origin>,
 ) -> DispatchResultWithPostInfo {
     DotsamaClaims::claim_tokens(
-        origin.unwrap_or_else(|| Origin::signed(ACCOUNT2)),
+        origin.unwrap_or_else(|| Origin::signed(ACCOUNT1)),
     )
 }
 
-pub(crate) fn _set_account1_as_rewards_sender_to_root() -> DispatchResultWithPostInfo {
-    _set_rewards_sender(None)
+pub(crate) fn _set_default_rewards_sender() -> DispatchResultWithPostInfo {
+    _set_rewards_sender(None, None)
 }
-pub(crate) fn _set_account1_as_rewards_sender_to_account2() -> DispatchResultWithPostInfo {
-    _set_rewards_sender(Some(Origin::signed(ACCOUNT2)))
+
+pub(crate) fn _set_rewards_sender_with_not_permitted_user() -> DispatchResultWithPostInfo {
+    _set_rewards_sender(Some(Origin::signed(ACCOUNT1)), None)
 }
 
 pub(crate) fn _set_rewards_sender(
     origin: Option<Origin>,
+    account: Option<Option<AccountId>>,
 ) -> DispatchResultWithPostInfo {
     DotsamaClaims::set_rewards_sender(
-        origin.unwrap_or_else(|| Origin::root()),
-        Some(ACCOUNT1)
+        origin.unwrap_or_else(Origin::root),
+        account.unwrap_or(Some(REWARDS_SENDER)),
     )
 }
 
-pub(crate) fn _add_one_eligible_account_to_root() -> DispatchResultWithPostInfo {
-    _add_eligible_accounts(None, vec![ ACCOUNT1 ])
+pub(crate) fn _add_eligible_accounts_over_limit() -> DispatchResultWithPostInfo {
+    _add_eligible_accounts(None, vec![ACCOUNT1; AccountsSetLimit::get() as usize])
 }
 
-pub(crate) fn _add_many_eligible_account_to_root() -> DispatchResultWithPostInfo {
-    _add_eligible_accounts(None, vec![ACCOUNT1; AccountsSetLimit::get() as usize + 1])
-}
-
-pub(crate) fn _add_eligible_accounts_to_account2() -> DispatchResultWithPostInfo {
-    _add_eligible_accounts(Some(Origin::signed(ACCOUNT2)), vec![])
+pub(crate) fn _add_eligible_account_with_not_permitted_user() -> DispatchResultWithPostInfo {
+    _add_eligible_accounts(Some(Origin::signed(ACCOUNT1)), vec![ACCOUNT1])
 }
 
 pub(crate) fn _add_eligible_accounts(
@@ -240,7 +223,7 @@ pub(crate) fn _add_eligible_accounts(
     eligible_accounts: Vec<AccountId>
 ) -> DispatchResultWithPostInfo {
     DotsamaClaims::add_eligible_accounts(
-        origin.unwrap_or_else(|| Origin::root()),
+        origin.unwrap_or_else(Origin::root),
         eligible_accounts
     )
 }
