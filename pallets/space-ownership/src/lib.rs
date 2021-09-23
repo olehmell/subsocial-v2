@@ -11,12 +11,14 @@ use frame_system::{self as system, ensure_signed};
 
 use df_traits::moderation::IsAccountBlocked;
 use pallet_spaces::{Module as Spaces, SpaceById, SpaceIdsByOwner};
+use pallet_profiles::{Module as Profiles};
 use pallet_utils::{Error as UtilsError, SpaceId, remove_from_vec};
 
 /// The pallet's configuration trait.
 pub trait Config: system::Config
     + pallet_utils::Config
     + pallet_spaces::Config
+    + pallet_profiles::Config
 {
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as system::Config>::Event>;
@@ -101,10 +103,19 @@ decl_module! {
       <SpaceById<T>>::insert(space_id, space);
 
       // Remove space id from the list of spaces by old owner
-      <SpaceIdsByOwner<T>>::mutate(old_owner, |space_ids| remove_from_vec(space_ids, space_id));
+      <SpaceIdsByOwner<T>>::mutate(&old_owner, |space_ids| remove_from_vec(space_ids, space_id));
 
       // Add space id to the list of spaces by new owner
-      <SpaceIdsByOwner<T>>::mutate(new_owner.clone(), |ids| ids.push(space_id));
+      <SpaceIdsByOwner<T>>::mutate(&new_owner, |ids| ids.push(space_id));
+
+      let profile_opt = Profiles::<T>::social_account_by_id(&old_owner)
+        .and_then(|social_account| social_account.profile);
+
+      if let Some(profile) = profile_opt {
+        if profile == space_id {
+          let _ = Profiles::<T>::try_remove_profile(&old_owner);
+        }
+      }
 
       // TODO add a new owner as a space follower? See T::BeforeSpaceCreated::before_space_created(new_owner.clone(), space)?;
 

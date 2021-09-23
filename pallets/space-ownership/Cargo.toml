@@ -18,6 +18,7 @@ std = [
     'frame-system/std',
     'sp-std/std',
     'df-traits/std',
+    'pallet-profiles/std',
     'pallet-spaces/std',
     'pallet-utils/std',
 ]
@@ -32,6 +33,7 @@ version = '2.0.0'
 # Local dependencies
 df-traits = { default-features = false, path = '../traits' }
 pallet-spaces = { default-features = false, path = '../spaces' }
+pallet-profiles = { default-features = false, path = '../profiles' }
 pallet-utils = { default-features = false, path = '../utils' }
 
 # Substrate dependencies
