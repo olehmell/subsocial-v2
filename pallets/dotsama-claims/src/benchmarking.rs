@@ -65,7 +65,7 @@ benchmarks! {
     }
 
     add_eligible_accounts {
-        let a in 1 .. T::AccountsSetLimit::get() => ();
+        let a in 1 .. T::AccountsSetLimit::get() - 1 => ();
         let eligible_accounts = create_eligible_accounts::<T>(a);
     }: _(RawOrigin::Root, eligible_accounts)
     verify {

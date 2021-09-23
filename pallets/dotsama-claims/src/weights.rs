@@ -47,19 +47,19 @@ pub trait WeightInfo {
 pub struct SubstrateWeight<T>(PhantomData<T>);
 impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	fn claim_tokens() -> Weight {
-		(103_516_000 as Weight)
+		(99_664_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(6 as Weight))
 			.saturating_add(T::DbWeight::get().writes(4 as Weight))
 	}
 	fn set_rewards_sender() -> Weight {
-		(26_842_000 as Weight)
+		(25_249_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(1 as Weight))
 			.saturating_add(T::DbWeight::get().writes(1 as Weight))
 	}
 	fn add_eligible_accounts(a: u32, ) -> Weight {
 		(0 as Weight)
-			// Standard Error: 9_000
-			.saturating_add((2_731_000 as Weight).saturating_mul(a as Weight))
+			// Standard Error: 2_000
+			.saturating_add((2_627_000 as Weight).saturating_mul(a as Weight))
 			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(a as Weight)))
 	}
 }
@@ -67,19 +67,19 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 // For backwards compatibility and tests
 impl WeightInfo for () {
 	fn claim_tokens() -> Weight {
-		(103_516_000 as Weight)
+		(99_664_000 as Weight)
 			.saturating_add(RocksDbWeight::get().reads(6 as Weight))
 			.saturating_add(RocksDbWeight::get().writes(4 as Weight))
 	}
 	fn set_rewards_sender() -> Weight {
-		(26_842_000 as Weight)
+		(25_249_000 as Weight)
 			.saturating_add(RocksDbWeight::get().reads(1 as Weight))
 			.saturating_add(RocksDbWeight::get().writes(1 as Weight))
 	}
 	fn add_eligible_accounts(a: u32, ) -> Weight {
 		(0 as Weight)
-			// Standard Error: 9_000
-			.saturating_add((2_731_000 as Weight).saturating_mul(a as Weight))
+			// Standard Error: 2_000
+			.saturating_add((2_627_000 as Weight).saturating_mul(a as Weight))
 			.saturating_add(RocksDbWeight::get().writes((1 as Weight).saturating_mul(a as Weight)))
 	}
 }
