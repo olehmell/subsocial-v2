@@ -151,7 +151,11 @@ pub mod pallet {
             Ok(Pays::No.into())
         }
 
-        #[pallet::weight(<T as Config>::WeightInfo::add_eligible_accounts())]
+        #[pallet::weight(
+            <T as Config>::WeightInfo::add_eligible_accounts(
+                eligible_accounts.len() as u32
+            )
+        )]
         pub fn add_eligible_accounts(
             origin: OriginFor<T>,
             eligible_accounts: Vec<T::AccountId>,

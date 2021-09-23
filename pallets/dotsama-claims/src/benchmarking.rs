@@ -3,13 +3,14 @@
 #![cfg(feature = "runtime-benchmarks")]
 
 use super::*;
-use sp_std::{vec};
-use crate::{Module as Pallet};
+use sp_std::vec;
+use crate::Module as Pallet;
 use frame_system::{RawOrigin};
 use frame_benchmarking::{benchmarks, account};
-use frame_support::traits::{Currency, Get};
+use frame_support::{
+    ensure, traits::{Currency, Get},
+};
 use sp_runtime::traits::Bounded;
-use frame_support::{assert_ok};
 use pallet_utils::BalanceOf;
 use sp_std::{
     vec::Vec,
@@ -27,19 +28,26 @@ fn rewards_sender_with_free_balance<T: Config>() -> T::AccountId {
     rewards_sender
 }
 
-fn eligible_account<T: Config>() -> T::AccountId {
-    let eligible_account: T::AccountId = account("eligible_account", ELIGIBLE_ACCOUNT_SEED, ELIGIBLE_ACCOUNT_SEED);
+fn create_eligible_account<T: Config>(index: u32) -> T::AccountId {
+    account("eligible_account", index, ELIGIBLE_ACCOUNT_SEED)
+}
 
-    eligible_account
+fn create_eligible_accounts<T: Config>(accounts_number: u32) -> Vec<T::AccountId> {
+    let mut eligible_accounts: Vec<T::AccountId> = Vec::new();
+    for i in 0..accounts_number {
+        eligible_accounts.push(create_eligible_account::<T>(i));
+    }
+
+    eligible_accounts
 }
 
 benchmarks! {
-
     claim_tokens {
         let rewards_sender: T::AccountId = rewards_sender_with_free_balance::<T>();
-        let eligible_account: T::AccountId = eligible_account::<T>();
-        assert_ok!(Pallet::<T>::set_rewards_sender(RawOrigin::Root.into(), Some(rewards_sender)));
-        assert_ok!(Pallet::<T>::add_eligible_accounts(RawOrigin::Root.into(), vec![eligible_account.clone()]));
+        Pallet::<T>::set_rewards_sender(RawOrigin::Root.into(), Some(rewards_sender))?;
+
+        let eligible_account: T::AccountId = create_eligible_account::<T>(1);
+        Pallet::<T>::add_eligible_accounts(RawOrigin::Root.into(), vec![eligible_account.clone()])?;
     }: _(RawOrigin::Signed(eligible_account.clone()))
     verify {
         let initial_claim_amount = T::InitialClaimAmount::get();
@@ -57,11 +65,11 @@ benchmarks! {
     }
 
     add_eligible_accounts {
-        let eligible_account: T::AccountId = eligible_account::<T>();
-        let accounts_limit = T::AccountsSetLimit::get() as usize;
-    }: _(RawOrigin::Root, vec![eligible_account.clone(); accounts_limit - 1])
+        let a in 1 .. T::AccountsSetLimit::get() => ();
+        let eligible_accounts = create_eligible_accounts::<T>(a);
+    }: _(RawOrigin::Root, eligible_accounts)
     verify {
-        assert_eq!(Pallet::<T>::eligible_accounts(eligible_account), true);
+        ensure!(EligibleAccounts::<T>::iter().count() as u32 == a, "Eligible accounts not added");
     }
 }
 
