@@ -122,7 +122,6 @@ pub mod pallet {
 
             <TokensClaimedByAccount<T>>::insert(&who, initial_amount);
 
-            // TODO should be .saturating_add(initial_amount)
             <TotalTokensClaimed<T>>::mutate(|total_amount| {
                 *total_amount = Some(total_amount.unwrap_or_default().saturating_add(initial_amount))
             });
@@ -195,7 +194,7 @@ pub mod pallet {
         }
 
         pub(super) fn try_get_rewards_sender() -> Result<T::AccountId, DispatchError> {
-            return if let Some(account) = Self::rewards_sender() {
+            if let Some(account) = Self::rewards_sender() {
                 Ok(account)
             } else {
                 Err(Error::<T>::NoRewardsSenderSet.into())
