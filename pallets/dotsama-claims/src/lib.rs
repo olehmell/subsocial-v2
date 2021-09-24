@@ -238,13 +238,15 @@ impl<T: Config + Send + Sync> EnsureAllowedToClaimTokens<T>
 }
 
 #[repr(u8)]
-enum ValidityError {
+enum ClaimsValidityError {
+    /// Either the rewards sender account is not set or it has insufficient balance.
     ClaimsAreInactive = 0,
+    /// The signer is not eligible to claim or already made a claim.
     NotAllowedToClaim = 1,
 }
 
-impl From<ValidityError> for u8 {
-    fn from(err: ValidityError) -> Self {
+impl From<ClaimsValidityError> for u8 {
+    fn from(err: ClaimsValidityError) -> Self {
         err as u8
     }
 }
@@ -272,14 +274,14 @@ impl<T: Config + Send + Sync> SignedExtension for EnsureAllowedToClaimTokens<T>
         _len: usize,
     ) -> TransactionValidity {
         if let Some(Call::claim_tokens()) = call.is_sub_type() {
-            let sender = Pallet::<T>::try_get_rewards_sender()
-                .map_err(|_| InvalidTransaction::Custom(ValidityError::ClaimsAreInactive.into()))?;
+            let rewards_sender = Pallet::<T>::try_get_rewards_sender()
+                .map_err(|_| InvalidTransaction::Custom(ClaimsValidityError::ClaimsAreInactive.into()))?;
 
-            Pallet::<T>::ensure_rewards_account_has_sufficient_balance(&sender).
-                map_err(|_| InvalidTransaction::Custom(ValidityError::ClaimsAreInactive.into()))?;
+            Pallet::<T>::ensure_rewards_account_has_sufficient_balance(&rewards_sender).
+                map_err(|_| InvalidTransaction::Custom(ClaimsValidityError::ClaimsAreInactive.into()))?;
 
             Pallet::<T>::ensure_allowed_to_claim_tokens(who)
-                .map_err(|_| InvalidTransaction::Custom(ValidityError::NotAllowedToClaim.into()))?;
+                .map_err(|_| InvalidTransaction::Custom(ClaimsValidityError::NotAllowedToClaim.into()))?;
         }
         Ok(ValidTransaction::default())
     }
