@@ -21,7 +21,7 @@ fn claim_tokens_should_work() {
 }
 
 #[test]
-fn claim_tokens_should_fail_when_reward_signer_is_none() {
+fn claim_tokens_should_fail_when_rewards_sender_is_none() {
     ExtBuilder::build().execute_with(|| {
         assert_noop!(_claim_tokens_to_account1(), Error::<Test>::NoRewardsSenderSet);
     });
