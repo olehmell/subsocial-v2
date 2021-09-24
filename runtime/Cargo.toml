@@ -30,6 +30,9 @@ static_assertions = "1.1.0"
 
 # Local dependencies
 #pallet-donations = { default-features = false, path = '../pallets/donations' }
+
+pallet-dotsama-claims = { default-features = false, path = '../pallets/dotsama-claims' }
+
 pallet-faucets = { default-features = false, path = '../pallets/faucets' }
 #pallet-moderation = { default-features = false, path = '../pallets/moderation' }
 pallet-permissions = { default-features = false, path = '../pallets/permissions' }
@@ -108,6 +111,7 @@ runtime-benchmarks = [
     'pallet-balances/runtime-benchmarks',
     'pallet-timestamp/runtime-benchmarks',
     'sp-runtime/runtime-benchmarks',
+    'pallet-dotsama-claims/runtime-benchmarks',
 ]
 std = [
     'codec/std',
@@ -140,6 +144,7 @@ std = [
     'sp-io/std',
     'subsocial-primitives/std',
 #    'pallet-donations/std',
+    'pallet-dotsama-claims/std',
     'pallet-faucets/std',
 #    'pallet-moderation/std',
     'pallet-permissions/std',
