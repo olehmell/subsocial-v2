@@ -6,10 +6,10 @@ use sp_runtime::DispatchError::BadOrigin;
 
 #[test]
 fn claim_tokens_should_work() {
-    ExtBuilder::build_with_rewards_sender_and_setup_eligible_accounts().execute_with(|| {
+    ExtBuilder::build_with_set_rewards_sender_and_eligible_accounts().execute_with(|| {
         let initial_total_claimed_amount: Option<Balance> = DotsamaClaims::total_tokens_claimed();
 
-        assert_ok!(_claim_tokens_to_account1());
+        assert_ok!(_claim_tokens_by_account1());
 
         let result_total_claimed_amount: Option<Balance> = DotsamaClaims::total_tokens_claimed();
 
@@ -23,31 +23,31 @@ fn claim_tokens_should_work() {
 #[test]
 fn claim_tokens_should_fail_when_rewards_sender_is_none() {
     ExtBuilder::build().execute_with(|| {
-        assert_noop!(_claim_tokens_to_account1(), Error::<Test>::NoRewardsSenderSet);
+        assert_noop!(_claim_tokens_by_account1(), Error::<Test>::NoRewardsSenderSet);
     });
 }
 
 
 #[test]
 fn claim_tokens_should_fail_when_rewards_sender_has_insufficient_balance() {
-    ExtBuilder::build_with_rewards_sender_and_setup_eligible_accounts().execute_with(|| {
-        assert_ok!(_claim_tokens_to_account1());
-        assert_noop!(_claim_tokens_to_account2(), Error::<Test>::RewardsSenderHasInsufficientBalance);
+    ExtBuilder::build_with_set_rewards_sender_and_eligible_accounts().execute_with(|| {
+        assert_ok!(_claim_tokens_by_account1());
+        assert_noop!(_claim_tokens_by_account2(), Error::<Test>::RewardsSenderHasInsufficientBalance);
     });
 }
 
 #[test]
 fn claim_tokens_should_fail_when_account_not_eligible_to_claim() {
-    ExtBuilder::build_with_rewards_account().execute_with(|| {
-        assert_noop!(_claim_tokens_to_account1(), Error::<Test>::AccountNotEligible);
+    ExtBuilder::build_with_set_rewards_sender().execute_with(|| {
+        assert_noop!(_claim_tokens_by_account1(), Error::<Test>::AccountNotEligible);
     });
 }
 
 #[test]
 fn claim_tokens_should_fail_when_the_account_already_claimed_tokens() {
-    ExtBuilder::build_with_rewards_sender_and_setup_eligible_accounts().execute_with(|| {
-        assert_ok!(_claim_tokens_to_account1());
-        assert_noop!(_claim_tokens_to_account1(), Error::<Test>::TokensAlreadyClaimed);
+    ExtBuilder::build_with_set_rewards_sender_and_eligible_accounts().execute_with(|| {
+        assert_ok!(_claim_tokens_by_account1());
+        assert_noop!(_claim_tokens_by_account1(), Error::<Test>::TokensAlreadyClaimed);
     });
 }
 
@@ -77,7 +77,7 @@ fn set_rewards_sender_should_work() {
 #[test]
 fn set_rewards_sender_should_fail_when_origin_not_root() {
     ExtBuilder::build().execute_with(|| {
-        assert_noop!(_set_rewards_sender_with_not_permitted_user(), BadOrigin);
+        assert_noop!(_not_root_tries_to_set_rewards_sender(), BadOrigin);
     });
 }
 
@@ -111,7 +111,7 @@ fn add_eligible_accounts_should_work() {
 #[test]
 fn add_eligible_accounts_should_fail_when_origin_not_root() {
     ExtBuilder::build().execute_with(|| {
-        assert_noop!(_add_eligible_account_with_not_permitted_user(), BadOrigin);
+        assert_noop!(_not_root_tries_to_add_eligible_accounts(), BadOrigin);
     });
 }
 
