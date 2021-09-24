@@ -95,7 +95,7 @@ impl pallet_utils::Config for Test {
 
 parameter_types! {
     pub const InitialClaimAmount: Balance = 10;
-    pub const AccountsSetLimit: u32 = 30_000;
+    pub const AccountsSetLimit: u32 = 100;
 }
 
 impl dotsama_claims::Config for Test {
