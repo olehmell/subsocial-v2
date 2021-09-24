@@ -387,9 +387,9 @@ mod tests {
         b"Space_Handle".to_vec()
     }
 
-    fn space_handle_2() -> Vec<u8> {
-        b"space_handle_2".to_vec()
-    }
+    // fn space_handle_2() -> Vec<u8> {
+    //     b"space_handle_2".to_vec()
+    // }
 
     fn space_content_ipfs() -> Content {
         Content::IPFS(b"bafyreib3mgbou4xln42qqcgj6qlt3cif35x4ribisxgq7unhpun525l54e".to_vec())
@@ -445,10 +445,6 @@ mod tests {
 
     fn reply_content_ipfs() -> Content {
         Content::IPFS(b"QmYA2fn8cMbVWo4v95RwcwJVyQsNtnEwHerfWR8UNtEwoE".to_vec())
-    }
-
-    fn profile_content_ipfs() -> Content {
-        Content::IPFS(b"QmRAQB6YaCyidP37UdDnjFY5vQuiaRtqdyoW2CuDgwxkA5".to_vec())
     }
 
     fn reaction_upvote() -> ReactionKind {
@@ -713,11 +709,11 @@ mod tests {
         _delete_post_reaction(origin, Some(post_id.unwrap_or(2)), reaction_id)
     }
 
-    fn _create_default_profile() -> DispatchResult {
+    fn _set_default_profile() -> DispatchResult {
         _set_profile(None, None)
     }
 
-    fn _create_profile_with_not_my_space() -> DispatchResult {
+    fn _set_profile_with_not_my_space() -> DispatchResult {
         _set_profile(Some(Origin::signed(ACCOUNT3)), None)
     }
 
@@ -729,6 +725,10 @@ mod tests {
             origin.unwrap_or_else(|| Origin::signed(ACCOUNT1)),
             space_id_opt.unwrap_or(SPACE1)
         )
+    }
+
+    fn _remove_default_profile() -> DispatchResult {
+        _remove_profile(None)
     }
 
     fn _remove_profile(
@@ -2584,7 +2584,7 @@ mod tests {
     #[test]
     fn set_profile_should_work() {
         ExtBuilder::build_with_space().execute_with(|| {
-            assert_ok!(_create_default_profile()); // AccountId 1
+            assert_ok!(_set_default_profile()); // AccountId 1
 
             let profile = Profiles::social_account_by_id(ACCOUNT1).unwrap().profile.unwrap();
             assert_eq!(profile, SPACE1);
@@ -2594,9 +2594,9 @@ mod tests {
     #[test]
     fn set_profile_should_fail_when_profile_is_already_created() {
         ExtBuilder::build_with_space().execute_with(|| {
-            assert_ok!(_create_default_profile());
+            assert_ok!(_set_default_profile());
             // AccountId 1
-            assert_noop!(_create_default_profile(), ProfilesError::<TestRuntime>::ProfileAlreadySet);
+            assert_noop!(_set_default_profile(), ProfilesError::<TestRuntime>::ProfileAlreadySet);
         });
     }
 
@@ -2604,7 +2604,7 @@ mod tests {
     fn set_profile_should_fail_when_user_does_not_space_owner() {
         ExtBuilder::build_with_space().execute_with(|| {
             // AccountId 3
-            assert_noop!(_create_profile_with_not_my_space(), SpacesError::<TestRuntime>::NotASpaceOwner);
+            assert_noop!(_set_profile_with_not_my_space(), SpacesError::<TestRuntime>::NotASpaceOwner);
         });
     }
 
@@ -2612,20 +2612,18 @@ mod tests {
     fn set_profile_should_fail_when_space_now_found() {
         ExtBuilder::build().execute_with(|| {
             // AccountId 1
-            assert_noop!(_create_default_profile(), SpacesError::<TestRuntime>::SpaceNotFound);
+            assert_noop!(_set_default_profile(), SpacesError::<TestRuntime>::SpaceNotFound);
         });
     }
 
     #[test]
     fn remove_profile_should_work() {
         ExtBuilder::build_with_space().execute_with(|| {
-            assert_ok!(_create_default_profile());
+            assert_ok!(_set_default_profile());
             // AccountId 1
-            assert_ok!(_remove_profile(
-                None,
-            ));
+            assert_ok!(_remove_default_profile());
 
-            // Check whether profile updated correctly
+            // Check whether profile removed correctly
             let profile = Profiles::social_account_by_id(ACCOUNT1).unwrap().profile;
             assert!(profile.is_none());
         });
@@ -2634,9 +2632,20 @@ mod tests {
     #[test]
     fn remove_profile_should_fail_when_social_account_not_found() {
         ExtBuilder::build().execute_with(|| {
-            assert_noop!(_remove_profile(
-                None,
-            ), ProfilesError::<TestRuntime>::SocialAccountNotFound);
+            assert_noop!(_remove_default_profile(), ProfilesError::<TestRuntime>::SocialAccountNotFound);
+        });
+    }
+
+    #[test]
+    fn profile_should_be_removed_after_accept_space_ownership() {
+        ExtBuilder::build_with_space().execute_with(|| {
+            assert_ok!(_set_default_profile()); // Set SpaceId 1 as Profile for Account1
+            assert_ok!(_transfer_default_space_ownership()); // Transfer SpaceId 1 owned by ACCOUNT1 to ACCOUNT2
+
+            assert_ok!(_accept_default_pending_ownership()); // Accept ownership by ACCOUNT2
+
+            let profile = Profiles::social_account_by_id(ACCOUNT1).unwrap().profile;
+            assert!(profile.is_none());
         });
     }
 
