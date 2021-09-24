@@ -120,10 +120,12 @@ pub mod pallet {
                 ExistenceRequirement::KeepAlive,
             )?;
 
-            <TokensClaimedByAccount<T>>::insert(&who, initial_amount);
+            <TokensClaimedByAccount<T>>::mutate(&who, |claimed| {
+                *claimed = claimed.saturating_add(initial_amount)
+            });
 
-            <TotalTokensClaimed<T>>::mutate(|total_amount| {
-                *total_amount = Some(total_amount.unwrap_or_default().saturating_add(initial_amount))
+            <TotalTokensClaimed<T>>::mutate(|total_claimed| {
+                *total_claimed = Some(total_claimed.unwrap_or_default().saturating_add(initial_amount))
             });
 
             Self::deposit_event(Event::TokensClaimed(who, initial_amount));
@@ -164,7 +166,7 @@ pub mod pallet {
             let accounts_len = eligible_accounts.len();
             let accounts_set_limit = T::AccountsSetLimit::get() as usize;
 
-            ensure!(accounts_len < accounts_set_limit, Error::<T>::AddingTooManyAccountsAtOnce);
+            ensure!(accounts_len <= accounts_set_limit, Error::<T>::AddingTooManyAccountsAtOnce);
 
             for eligible_account in eligible_accounts {
                 <EligibleAccounts<T>>::insert(&eligible_account, true);

@@ -106,12 +106,13 @@ fn add_eligible_accounts_should_work() {
         assert_eq!(EligibleAccounts::<Test>::iter().count(), 0);
 
         let mut eligible_accounts = Vec::new();
-        for account in 1..AccountsSetLimit::get() as AccountId {
+        for account in 1..=AccountsSetLimit::get() as AccountId {
             eligible_accounts.push(account);
         }
-        assert_ok!(_add_eligible_accounts(None, eligible_accounts.clone()));
 
-        assert_eq!(EligibleAccounts::<Test>::iter().count(), (AccountsSetLimit::get() - 1) as usize);
+        assert_ok!(_add_eligible_accounts(None, eligible_accounts.clone()));
+        assert_eq!(EligibleAccounts::<Test>::iter().count(), AccountsSetLimit::get() as usize);
+
         for account in eligible_accounts {
             assert_eq!(DotsamaClaims::eligible_accounts(account), true);
         }

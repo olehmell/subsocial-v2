@@ -207,7 +207,7 @@ pub(crate) fn _set_rewards_sender(
 }
 
 pub(crate) fn _add_eligible_accounts_over_limit() -> DispatchResultWithPostInfo {
-    _add_eligible_accounts(None, vec![ACCOUNT1; AccountsSetLimit::get() as usize])
+    _add_eligible_accounts(None, vec![ACCOUNT1; AccountsSetLimit::get() as usize + 1])
 }
 
 pub(crate) fn _not_root_tries_to_add_eligible_accounts() -> DispatchResultWithPostInfo {
