@@ -31,7 +31,6 @@ use frame_system::{self as system, ensure_signed};
 use pallet_utils::{Content, WhoAndWhen, SpaceId, Module as Utils, PostId};
 use pallet_spaces::Module as Spaces;
 
-// TODO: move all tests to df-integration-tests
 // #[cfg(test)]
 // mod mock;
 
@@ -174,7 +173,7 @@ decl_event!(
     {
         EntityReported(AccountId, SpaceId, EntityId, ReportId),
         EntityStatusSuggested(AccountId, SpaceId, EntityId, Option<EntityStatus>),
-        EntityStatusUpdated(AccountId, SpaceId, EntityId, Option<EntityStatus>),
+        EntityStatusUpdated(AccountId, SpaceId, EntityId, EntityStatus),
         EntityStatusDeleted(AccountId, SpaceId, EntityId),
         ModerationSettingsUpdated(AccountId, SpaceId),
     }
@@ -320,7 +319,7 @@ decl_module! {
             origin,
             entity: EntityId<T::AccountId>,
             scope: SpaceId,
-            status_opt: Option<EntityStatus>
+            status: EntityStatus
         ) -> DispatchResult {
             let who = ensure_signed(origin)?;
 
@@ -330,19 +329,15 @@ decl_module! {
             let space = Spaces::<T>::require_space(scope).map_err(|_| Error::<T>::ScopeNotFound)?;
             Self::ensure_account_status_manager(who.clone(), &space)?;
 
-            if let Some(status) = &status_opt {
-                let is_entity_in_scope = Self::ensure_entity_in_scope(&entity, scope).is_ok();
+            let is_entity_in_scope = Self::ensure_entity_in_scope(&entity, scope).is_ok();
+            ensure!(is_entity_in_scope, Error::<T>::EntityNotInScope);
 
-                if is_entity_in_scope && status == &EntityStatus::Blocked {
-                    Self::block_entity_in_scope(&entity, scope)?;
-                } else {
-                    StatusByEntityInSpace::<T>::insert(entity.clone(), scope, status);
-                }
-            } else {
-                StatusByEntityInSpace::<T>::remove(entity.clone(), scope);
+            match status {
+                EntityStatus::Blocked => Self::block_entity_in_scope(&entity, scope)?,
+                EntityStatus::Allowed => StatusByEntityInSpace::<T>::insert(entity.clone(), scope, status.clone()),
             }
 
-            Self::deposit_event(RawEvent::EntityStatusUpdated(who, scope, entity, status_opt));
+            Self::deposit_event(RawEvent::EntityStatusUpdated(who, scope, entity, status));
             Ok(())
         }
 
