@@ -43,6 +43,12 @@
     "drip_limit": "Option<Balance>"
   },
   "ReportId": "u64",
+  "Reason": {
+    "_enum": [
+      "Other",
+      "NSFW"
+    ]
+  },
   "EntityId": {
     "_enum": {
       "Content": "Content",
@@ -62,7 +68,8 @@
     "created": "WhoAndWhen",
     "reported_entity": "EntityId",
     "reported_within": "SpaceId",
-    "reason": "Content"
+    "reason": "Reason",
+    "details": "Content"
   },
   "SuggestedStatus": {
     "suggested": "WhoAndWhen",

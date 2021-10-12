@@ -34,7 +34,7 @@ static_assertions = "1.1.0"
 pallet-dotsama-claims = { default-features = false, path = '../pallets/dotsama-claims' }
 
 pallet-faucets = { default-features = false, path = '../pallets/faucets' }
-#pallet-moderation = { default-features = false, path = '../pallets/moderation' }
+pallet-moderation = { default-features = false, path = '../pallets/moderation' }
 pallet-permissions = { default-features = false, path = '../pallets/permissions' }
 
 pallet-post-history = { default-features = false, path = '../pallets/post-history' }
@@ -146,7 +146,7 @@ std = [
 #    'pallet-donations/std',
     'pallet-dotsama-claims/std',
     'pallet-faucets/std',
-#    'pallet-moderation/std',
+    'pallet-moderation/std',
     'pallet-permissions/std',
     'pallet-post-history/std',
     'pallet-posts/std',

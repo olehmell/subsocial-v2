@@ -88,14 +88,16 @@ impl<T: Config> Report<T> {
         created_by: T::AccountId,
         reported_entity: EntityId<T::AccountId>,
         scope: SpaceId,
-        reason: Content
+        reason: Reason,
+        details: Content
     ) -> Self {
         Self {
             id,
             created: WhoAndWhen::<T>::new(created_by),
             reported_entity,
             reported_within: scope,
-            reason
+            reason,
+            details
         }
     }
 }

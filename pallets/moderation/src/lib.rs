@@ -32,15 +32,22 @@ use pallet_utils::{Content, WhoAndWhen, SpaceId, Module as Utils, PostId};
 use pallet_spaces::Module as Spaces;
 
 // TODO: move all tests to df-integration-tests
-#[cfg(test)]
-mod mock;
+// #[cfg(test)]
+// mod mock;
 
-#[cfg(test)]
-mod tests;
+// #[cfg(test)]
+// mod tests;
 
 pub mod functions;
 
 pub type ReportId = u64;
+
+#[derive(Encode, Decode, Clone, Eq, PartialEq, RuntimeDebug)]
+pub enum Reason {
+    Other,
+    NSFW,
+    // TODO: add other standard reasons
+}
 
 #[derive(Encode, Decode, Clone, Eq, PartialEq, RuntimeDebug)]
 pub enum EntityId<AccountId> {
@@ -68,7 +75,9 @@ pub struct Report<T: Config> {
     /// Within what space (scope) this entity has been reported.
     reported_within: SpaceId, // TODO rename: reported_in_space
     /// A reason should describe why this entity should be blocked in this space.
-    reason: Content,
+    reason: Reason,
+
+    details: Content,
 }
 
 // TODO rename to SuggestedEntityStatus
@@ -226,14 +235,12 @@ decl_module! {
             origin,
             entity: EntityId<T::AccountId>,
             scope: SpaceId,
-            reason: Content
+            reason: Reason,
+            details: Content
         ) -> DispatchResult {
             let who = ensure_signed(origin)?;
 
-            // TODO check this func, if looks strange
-            Utils::<T>::ensure_content_is_some(&reason).map_err(|_| Error::<T>::ReasonIsEmpty)?;
-            
-            Utils::<T>::is_valid_content(reason.clone())?;
+            Utils::<T>::is_valid_content(details.clone())?;
 
             ensure!(Spaces::<T>::require_space(scope).is_ok(), Error::<T>::ScopeNotFound);
             Self::ensure_entity_in_scope(&entity, scope)?;
@@ -242,7 +249,7 @@ decl_module! {
             ensure!(not_reported_yet, Error::<T>::AlreadyReportedEntity);
 
             let report_id = Self::next_report_id();
-            let new_report = Report::<T>::new(report_id, who.clone(), entity.clone(), scope, reason);
+            let new_report = Report::<T>::new(report_id, who.clone(), entity.clone(), scope, reason, details);
 
             ReportById::<T>::insert(report_id, new_report);
             ReportIdByAccount::<T>::insert((&entity, &who), report_id);

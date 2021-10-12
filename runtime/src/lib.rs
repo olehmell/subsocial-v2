@@ -328,7 +328,7 @@ impl pallet_posts::Config for Runtime {
 	type MaxCommentDepth = MaxCommentDepth;
 	type PostScores = Scores;
 	type AfterPostUpdated = PostHistory;
-	type IsPostBlocked = ()/*Moderation*/;
+	type IsPostBlocked = Moderation;
 }
 
 parameter_types! {}
@@ -370,8 +370,8 @@ impl pallet_roles::Config for Runtime {
 	type MaxUsersToProcessPerDeleteRole = MaxUsersToProcessPerDeleteRole;
 	type Spaces = Spaces;
 	type SpaceFollows = SpaceFollows;
-	type IsAccountBlocked = ()/*Moderation*/;
-	type IsContentBlocked = ()/*Moderation*/;
+	type IsAccountBlocked = Moderation;
+	type IsContentBlocked = Moderation;
 }
 
 parameter_types! {
@@ -429,8 +429,8 @@ impl pallet_spaces::Config for Runtime {
 	type SpaceFollows = SpaceFollows;
 	type BeforeSpaceCreated = SpaceFollows;
 	type AfterSpaceUpdated = SpaceHistory;
-	type IsAccountBlocked = ()/*Moderation*/;
-	type IsContentBlocked = ()/*Moderation*/;
+	type IsAccountBlocked = Moderation;
+	type IsContentBlocked = Moderation;
 	type HandleDeposit = HandleDeposit;
 }
 
@@ -495,15 +495,6 @@ impl pallet_donations::Config for Runtime {
 }
 
 parameter_types! {
-	pub const DefaultAutoblockThreshold: u16 = 20;
-}
-
-impl pallet_moderation::Config for Runtime {
-	type Event = Event;
-	type DefaultAutoblockThreshold = DefaultAutoblockThreshold;
-}
-
-parameter_types! {
 	pub const DailyPeriodInBlocks: BlockNumber = DAYS;
 	pub const WeeklyPeriodInBlocks: BlockNumber = DAYS * 7;
 	pub const MonthlyPeriodInBlocks: BlockNumber = DAYS * 30;
@@ -522,6 +513,15 @@ impl pallet_subscriptions::Config for Runtime {
 	type YearlyPeriodInBlocks = YearlyPeriodInBlocks;
 }
 */
+
+parameter_types! {
+	pub const DefaultAutoblockThreshold: u16 = 20;
+}
+
+impl pallet_moderation::Config for Runtime {
+	type Event = Event;
+	type DefaultAutoblockThreshold = DefaultAutoblockThreshold;
+}
 
 impl pallet_faucets::Config for Runtime {
 	type Event = Event;
@@ -567,7 +567,7 @@ construct_runtime!(
 		Faucets: pallet_faucets::{Module, Call, Storage, Event<T>},
 		DotsamaClaims: pallet_dotsama_claims::{Module, Call, Storage, Event<T>},
 		// SessionKeys: pallet_session_keys::{Module, Call, Storage, Event<T>},
-		// Moderation: pallet_moderation::{Module, Call, Storage, Event<T>},
+		Moderation: pallet_moderation::{Module, Call, Storage, Event<T>},
 		// Donations: pallet_donations::{Module, Call, Storage, Event<T>},
 		// Subscriptions: pallet_subscriptions::{Module, Call, Storage, Event<T>},
 	}
