@@ -1,16 +1,16 @@
 //! # Spaces Module
-//! 
+//!
 //! Spaces are the primary components of Subsocial. This module allows you to create a Space
 //! and customize it by updating its' owner(s), content, unique handle, and permissions.
-//! 
-//! To understand how Spaces fit into the Subsocial ecosystem, you can think of how 
-//! folders and files work in a file system. Spaces are similar to folders, that can contain Posts, 
-//! in this sense. The permissions of the Space and Posts can be customized so that a Space 
-//! could be as simple as a personal blog (think of a page on Facebook) or as complex as community 
+//!
+//! To understand how Spaces fit into the Subsocial ecosystem, you can think of how
+//! folders and files work in a file system. Spaces are similar to folders, that can contain Posts,
+//! in this sense. The permissions of the Space and Posts can be customized so that a Space
+//! could be as simple as a personal blog (think of a page on Facebook) or as complex as community
 //! (think of a subreddit) governed DAO.
-//! 
+//!
 //! Spaces can be compared to existing entities on web 2.0 platforms such as:
-//! 
+//!
 //! - Blogs on Blogger,
 //! - Publications on Medium,
 //! - Groups or pages on Facebook,
@@ -24,12 +24,13 @@
 use codec::{Decode, Encode};
 use frame_support::{
     decl_error, decl_event, decl_module, decl_storage, ensure,
-    dispatch::{DispatchError, DispatchResult},
+    dispatch::{DispatchError, DispatchResult, DispatchResultWithPostInfo},
     traits::{Get, Currency, ExistenceRequirement, ReservableCurrency},
+    weights::Pays,
 };
-use sp_runtime::RuntimeDebug;
+use sp_runtime::{RuntimeDebug, traits::Zero};
 use sp_std::prelude::*;
-use frame_system::{self as system, ensure_signed};
+use frame_system::{self as system, ensure_signed, ensure_root};
 
 use df_traits::{
     SpaceForRoles, SpaceForRolesProvider, PermissionChecker, SpaceFollowsProvider,
@@ -39,10 +40,11 @@ use pallet_permissions::{Module as Permissions, SpacePermission, SpacePermission
 use pallet_utils::{Module as Utils, Error as UtilsError, SpaceId, WhoAndWhen, Content};
 
 pub mod rpc;
+pub mod migrations;
 
 /// Information about a space's owner, its' content, visibility and custom permissions.
 #[derive(Encode, Decode, Clone, Eq, PartialEq, RuntimeDebug)]
-pub struct Space<T: Trait> {
+pub struct Space<T: Config> {
 
     /// Unique sequential identifier of a space. Examples of space ids: `1`, `2`, `3`, and so on.
     pub id: SpaceId,
@@ -63,7 +65,7 @@ pub struct Space<T: Trait> {
 
     pub content: Content,
 
-    /// Hidden field is used to recommend to end clients (web and mobile apps) that a particular 
+    /// Hidden field is used to recommend to end clients (web and mobile apps) that a particular
     /// space and its' posts should not be shown.
     pub hidden: bool,
 
@@ -78,12 +80,12 @@ pub struct Space<T: Trait> {
 
     pub score: i32,
 
-    /// This allows you to override Subsocial's default permissions by enabling or disabling role 
+    /// This allows you to override Subsocial's default permissions by enabling or disabling role
     /// permissions.
     pub permissions: Option<SpacePermissions>,
 }
 
-#[derive(Encode, Decode, Clone, Eq, PartialEq, RuntimeDebug)]
+#[derive(Encode, Decode, Clone, Eq, PartialEq, Default, RuntimeDebug)]
 #[allow(clippy::option_option)]
 pub struct SpaceUpdate {
     pub parent_id: Option<Option<SpaceId>>,
@@ -93,16 +95,29 @@ pub struct SpaceUpdate {
     pub permissions: Option<Option<SpacePermissions>>,
 }
 
+#[derive(Encode, Decode, Clone, Eq, PartialEq, RuntimeDebug)]
+pub struct SpacesSettings {
+    pub handles_enabled: bool
+}
+
+impl Default for SpacesSettings {
+    fn default() -> Self {
+        Self {
+            handles_enabled: true,
+        }
+    }
+}
+
 type BalanceOf<T> =
-  <<T as Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
+  <<T as Config>::Currency as Currency<<T as system::Config>::AccountId>>::Balance;
 
 /// The pallet's configuration trait.
-pub trait Trait: system::Trait
-    + pallet_utils::Trait
-    + pallet_permissions::Trait
+pub trait Config: system::Config
+    + pallet_utils::Config
+    + pallet_permissions::Config
 {
     /// The overarching event type.
-    type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
+    type Event: From<Event<Self>> + Into<<Self as system::Config>::Event>;
 
     type Currency: ReservableCurrency<Self::AccountId>;
 
@@ -122,11 +137,13 @@ pub trait Trait: system::Trait
 }
 
 decl_error! {
-  pub enum Error for Module<T: Trait> {
+  pub enum Error for Module<T: Config> {
     /// Space was not found by id.
     SpaceNotFound,
     /// Space handle is not unique.
     SpaceHandleIsNotUnique,
+    /// Handles are disabled in `PalletSettings`.
+    HandlesAreDisabled,
     /// Nothing to update in this space.
     NoUpdatesForSpace,
     /// Only space owners can manage this space.
@@ -137,6 +154,8 @@ decl_error! {
     NoPermissionToCreateSubspaces,
     /// Space is at root level, no `parent_id` specified.
     SpaceIsAtRoot,
+    /// New spaces' settings don't differ from the old ones.
+    NoUpdatesForSpacesSettings,
   }
 }
 
@@ -145,7 +164,7 @@ pub const RESERVED_SPACE_COUNT: u64 = 1000;
 
 // This pallet's storage items.
 decl_storage! {
-    trait Store for Module<T: Trait> as SpacesModule {
+    trait Store for Module<T: Config> as SpacesModule {
 
         /// The next space id.
         pub NextSpaceId get(fn next_space_id): SpaceId = RESERVED_SPACE_COUNT + 1;
@@ -169,15 +188,24 @@ decl_storage! {
         /// Find the ids of all spaces owned, by a given account.
         pub SpaceIdsByOwner get(fn space_ids_by_owner):
             map hasher(twox_64_concat) T::AccountId => Vec<SpaceId>;
+
+        pub PalletSettings get(fn settings): SpacesSettings;
+
+        /// True if `SpaceIdByHandle` storage is already fixed.
+        // TODO delete this storage and corresponding migration, after the migration executed and the storage value is `true`.
+        pub SpaceIdByHandleStorageFixed: bool = false;
     }
     add_extra_genesis {
       config(endowed_account): T::AccountId;
+      build(|_: &Self| {
+        SpaceIdByHandleStorageFixed::put(true);
+      })
     }
 }
 
 decl_event!(
     pub enum Event<T> where
-        <T as system::Trait>::AccountId,
+        <T as system::Config>::AccountId,
     {
         SpaceCreated(AccountId, SpaceId),
         SpaceUpdated(AccountId, SpaceId),
@@ -187,7 +215,7 @@ decl_event!(
 
 // The pallet's dispatchable functions.
 decl_module! {
-  pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+  pub struct Module<T: Config> for enum Call where origin: T::Origin {
 
     const HandleDeposit: BalanceOf<T> = T::HandleDeposit::get();
 
@@ -197,7 +225,17 @@ decl_module! {
     // Initializing events
     fn deposit_event() = default;
 
-    #[weight = 500_000 + T::DbWeight::get().reads_writes(4, 4)]
+    fn on_runtime_upgrade() -> frame_support::weights::Weight {
+      let mut final_weight = Zero::zero();
+
+      if !SpaceIdByHandleStorageFixed::get() {
+        final_weight = migrations::fix_corrupted_handles_storage::<T>();
+      }
+
+      final_weight
+    }
+
+    #[weight = 500_000 + T::DbWeight::get().reads_writes(5, 4)]
     pub fn create_space(
       origin,
       parent_id_opt: Option<SpaceId>,
@@ -208,6 +246,10 @@ decl_module! {
       let owner = ensure_signed(origin)?;
 
       Utils::<T>::is_valid_content(content.clone())?;
+
+      if handle_opt.is_some() {
+        Self::ensure_handles_enabled()?;
+      }
 
       // TODO: add tests for this case
       if let Some(parent_id) = parent_id_opt {
@@ -232,9 +274,10 @@ decl_module! {
       let new_space = &mut Space::new(space_id, parent_id_opt, owner.clone(), content, handle_opt.clone(), permissions);
 
       if let Some(handle) = handle_opt {
-        Self::reserve_handle(&new_space, handle)?;
+        new_space.reserve_handle(handle)?;
       }
 
+      // FIXME: What's about handle reservation if this fails?
       T::BeforeSpaceCreated::before_space_created(owner.clone(), new_space)?;
 
       <SpaceById<T>>::insert(space_id, new_space);
@@ -245,7 +288,7 @@ decl_module! {
       Ok(())
     }
 
-    #[weight = 500_000 + T::DbWeight::get().reads_writes(2, 3)]
+    #[weight = 500_000 + T::DbWeight::get().reads_writes(3, 3)]
     pub fn update_space(origin, space_id: SpaceId, update: SpaceUpdate) -> DispatchResult {
       let owner = ensure_signed(origin)?;
 
@@ -348,10 +391,42 @@ decl_module! {
       }
       Ok(())
     }
+
+    #[weight = 10_000 + T::DbWeight::get().reads_writes(1, 1)]
+    pub fn update_settings(origin, new_settings: SpacesSettings) -> DispatchResult {
+      ensure_root(origin)?;
+
+      let space_settings = Self::settings();
+      ensure!(space_settings != new_settings, Error::<T>::NoUpdatesForSpacesSettings);
+
+      PalletSettings::mutate(|settings| *settings = new_settings);
+
+      Ok(())
+    }
+
+    #[weight = 10_000 + T::DbWeight::get().reads_writes(2, 2)]
+    pub fn force_unreserve_handle(origin, handle: Vec<u8>) -> DispatchResultWithPostInfo {
+      ensure_root(origin)?;
+
+      let lowercased_handle = handle.to_ascii_lowercase();
+
+      if let Some(space_id) = Self::space_id_by_handle(&lowercased_handle) {
+        if let Ok(mut space) = Self::require_space(space_id) {
+          space.unreserve_handle(lowercased_handle)?;
+
+          space.handle = None;
+          SpaceById::<T>::insert(space_id, space);
+        } else {
+          SpaceIdByHandle::remove(&lowercased_handle);
+        }
+      }
+
+      Ok(Pays::No.into())
+    }
   }
 }
 
-impl<T: Trait> Space<T> {
+impl<T: Config> Space<T> {
     pub fn new(
         id: SpaceId,
         parent_id: Option<SpaceId>,
@@ -434,21 +509,29 @@ impl<T: Trait> Space<T> {
     pub fn is_unlisted(&self) -> bool {
         !self.is_public()
     }
-}
 
-impl Default for SpaceUpdate {
-    fn default() -> Self {
-        SpaceUpdate {
-            parent_id: None,
-            handle: None,
-            content: None,
-            hidden: None,
-            permissions: None,
-        }
+    pub fn reserve_handle(
+      &self,
+      handle: Vec<u8>
+    ) -> DispatchResult {
+      let handle_in_lowercase = Module::<T>::lowercase_and_ensure_unique_handle(handle)?;
+      Module::<T>::reserve_handle_deposit(&self.owner)?;
+      SpaceIdByHandle::insert(handle_in_lowercase, self.id);
+      Ok(())
+    }
+
+    pub fn unreserve_handle(
+      &self,
+      handle: Vec<u8>
+    ) -> DispatchResult {
+      let handle_in_lowercase = Utils::<T>::lowercase_handle(handle);
+      Module::<T>::unreserve_handle_deposit(&self.owner);
+      SpaceIdByHandle::remove(handle_in_lowercase);
+      Ok(())
     }
 }
 
-impl<T: Trait> Module<T> {
+impl<T: Config> Module<T> {
 
     /// Check that there is a `Space` with such `space_id` in the storage
     /// or return`SpaceNotFound` error.
@@ -486,6 +569,11 @@ impl<T: Trait> Module<T> {
         )
     }
 
+    pub fn ensure_handles_enabled() -> DispatchResult {
+        ensure!(Self::settings().handles_enabled, Error::<T>::HandlesAreDisabled);
+        Ok(())
+    }
+
     pub fn try_move_space_to_root(space_id: SpaceId) -> DispatchResult {
         let mut space = Self::require_space(space_id)?;
         space.parent_id = None;
@@ -521,11 +609,11 @@ impl<T: Trait> Module<T> {
     }
 
     pub fn reserve_handle_deposit(space_owner: &T::AccountId) -> DispatchResult {
-        <T as Trait>::Currency::reserve(space_owner, T::HandleDeposit::get())
+        <T as Config>::Currency::reserve(space_owner, T::HandleDeposit::get())
     }
 
     pub fn unreserve_handle_deposit(space_owner: &T::AccountId) -> BalanceOf<T> {
-        <T as Trait>::Currency::unreserve(space_owner, T::HandleDeposit::get())
+        <T as Config>::Currency::unreserve(space_owner, T::HandleDeposit::get())
     }
 
     /// This function will be performed only if a space has a handle.
@@ -536,7 +624,7 @@ impl<T: Trait> Module<T> {
         if space.handle.is_some() {
             let old_owner = &space.owner;
             Self::unreserve_handle_deposit(old_owner);
-            <T as Trait>::Currency::transfer(
+            <T as Config>::Currency::transfer(
                 old_owner,
                 new_owner,
                 T::HandleDeposit::get(),
@@ -547,30 +635,12 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    fn reserve_handle(
-        space: &Space<T>,
-        handle: Vec<u8>
-    ) -> DispatchResult {
-        let handle_in_lowercase = Self::lowercase_and_ensure_unique_handle(handle)?;
-        Self::reserve_handle_deposit(&space.owner)?;
-        SpaceIdByHandle::insert(handle_in_lowercase, space.id);
-        Ok(())
-    }
-
-    fn unreserve_handle(
-        space: &Space<T>,
-        handle: Vec<u8>
-    ) -> DispatchResult {
-        let handle_in_lowercase = Utils::<T>::lowercase_handle(handle);
-        Self::unreserve_handle_deposit(&space.owner);
-        SpaceIdByHandle::remove(handle_in_lowercase);
-        Ok(())
-    }
-
     fn update_handle(
         space: &Space<T>,
         maybe_new_handle: Option<Option<Vec<u8>>>,
     ) -> Result<bool, DispatchError> {
+        Self::ensure_handles_enabled()?;
+
         let mut is_handle_updated = false;
         if let Some(new_handle_opt) = maybe_new_handle {
             if let Some(old_handle) = space.handle.clone() {
@@ -591,12 +661,12 @@ impl<T: Trait> Module<T> {
                     }
                 } else {
                     // Unreserve the current handle
-                    Self::unreserve_handle(space, old_handle)?;
+                    space.unreserve_handle(old_handle)?;
                     is_handle_updated = true;
                 }
             } else if let Some(new_handle) = new_handle_opt {
                 // Reserve a handle for the space that has no handle yet
-                Self::reserve_handle(space, new_handle)?;
+                space.reserve_handle(new_handle)?;
                 is_handle_updated = true;
             }
         }
@@ -604,7 +674,7 @@ impl<T: Trait> Module<T> {
     }
 }
 
-impl<T: Trait> SpaceForRolesProvider for Module<T> {
+impl<T: Config> SpaceForRolesProvider for Module<T> {
     type AccountId = T::AccountId;
 
     fn get_space(id: SpaceId) -> Result<SpaceForRoles<Self::AccountId>, DispatchError> {
@@ -617,17 +687,17 @@ impl<T: Trait> SpaceForRolesProvider for Module<T> {
     }
 }
 
-pub trait BeforeSpaceCreated<T: Trait> {
+pub trait BeforeSpaceCreated<T: Config> {
     fn before_space_created(follower: T::AccountId, space: &mut Space<T>) -> DispatchResult;
 }
 
-impl<T: Trait> BeforeSpaceCreated<T> for () {
+impl<T: Config> BeforeSpaceCreated<T> for () {
     fn before_space_created(_follower: T::AccountId, _space: &mut Space<T>) -> DispatchResult {
         Ok(())
     }
 }
 
 #[impl_trait_for_tuples::impl_for_tuples(10)]
-pub trait AfterSpaceUpdated<T: Trait> {
+pub trait AfterSpaceUpdated<T: Config> {
     fn after_space_updated(sender: T::AccountId, space: &Space<T>, old_data: SpaceUpdate);
 }
