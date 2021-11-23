@@ -489,15 +489,6 @@ impl<T: Config> Space<T> {
         self.followers_count = self.followers_count.saturating_sub(1);
     }
 
-    #[allow(clippy::comparison_chain)]
-    pub fn change_score(&mut self, diff: i16) {
-        if diff > 0 {
-            self.score = self.score.saturating_add(diff.abs() as i32);
-        } else if diff < 0 {
-            self.score = self.score.saturating_sub(diff.abs() as i32);
-        }
-    }
-
     pub fn try_get_parent(&self) -> Result<SpaceId, DispatchError> {
         self.parent_id.ok_or_else(|| Error::<T>::SpaceIsAtRoot.into())
     }
@@ -639,10 +630,13 @@ impl<T: Config> Module<T> {
         space: &Space<T>,
         maybe_new_handle: Option<Option<Vec<u8>>>,
     ) -> Result<bool, DispatchError> {
-        Self::ensure_handles_enabled()?;
-
         let mut is_handle_updated = false;
         if let Some(new_handle_opt) = maybe_new_handle {
+
+            // We need to ensure that the space handles feature is enabled
+            // before allowing to edit them
+            Self::ensure_handles_enabled()?;
+
             if let Some(old_handle) = space.handle.clone() {
                 // If the space has a handle
 

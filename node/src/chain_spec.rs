@@ -5,19 +5,37 @@ use subsocial_runtime::{
 	SudoConfig, SpacesConfig, SystemConfig,
 	WASM_BINARY, Signature, constants::currency::DOLLARS,
 };
+use subsocial_primitives::Block;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_finality_grandpa::AuthorityId as GrandpaId;
 use sp_runtime::traits::{Verify, IdentifyAccount};
 use sc_service::{ChainType, Properties};
 use sc_telemetry::TelemetryEndpoints;
 use hex_literal::hex;
+use serde::{Serialize, Deserialize};
+use sc_chain_spec::ChainSpecExtension;
 
 // The URL for the telemetry server.
 const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
 const DEFAULT_PROTOCOL_ID: &str = "sub";
 
+/// Node `ChainSpec` extensions.
+///
+/// Additional parameters for some Substrate core modules,
+/// customizable from the chain spec.
+#[derive(Default, Clone, Serialize, Deserialize, ChainSpecExtension)]
+#[serde(rename_all = "camelCase")]
+pub struct Extensions {
+    /// Block numbers with known hashes.
+    pub fork_blocks: sc_client_api::ForkBlocks<Block>,
+    /// Known bad block hashes.
+    pub bad_blocks: sc_client_api::BadBlocks<Block>,
+    /// The light sync state extension used by the sync-state rpc.
+    pub light_sync_state: sc_sync_state_rpc::LightSyncStateExtension,
+}
+
 /// Specialized `ChainSpec`. This is a specialization of the general Substrate ChainSpec type.
-pub type ChainSpec = sc_service::GenericChainSpec<GenesisConfig>;
+pub type ChainSpec = sc_service::GenericChainSpec<GenesisConfig, Extensions>;
 
 /// Generate a crypto pair from seed.
 pub fn get_from_seed<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Public {
@@ -74,7 +92,7 @@ pub fn development_config() -> Result<ChainSpec, String> {
         None,
         Some(DEFAULT_PROTOCOL_ID),
         Some(subsocial_properties()),
-        None,
+        Default::default(),
     ))
 }
 
@@ -110,7 +128,7 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
         None,
         Some(DEFAULT_PROTOCOL_ID),
         Some(subsocial_properties()),
-        None,
+        Default::default(),
     ))
 }
 
@@ -155,7 +173,7 @@ pub fn subsocial_staging_config() -> Result<ChainSpec, String> {
         ).expect("Staging telemetry url is valid; qed")),
         Some(DEFAULT_PROTOCOL_ID),
         Some(subsocial_properties()),
-        None,
+        Default::default(),
     ))
 }
 
@@ -168,28 +186,28 @@ fn testnet_genesis(
 	_enable_println: bool
 ) -> GenesisConfig {
 	GenesisConfig {
-        frame_system: Some(SystemConfig {
-			code: wasm_binary.to_vec(),
-			changes_trie_config: Default::default(),
-		}),
-        pallet_balances: Some(BalancesConfig {
-			balances: endowed_accounts.iter().cloned().map(|(k, b)|(k, b * DOLLARS)).collect(),
-		}),
-		pallet_aura: Some(AuraConfig {
-			authorities: initial_authorities.iter().map(|x| (x.0.clone())).collect(),
-		}),
-        pallet_grandpa: Some(GrandpaConfig {
-			authorities: initial_authorities.iter().map(|x| (x.1.clone(), 1)).collect(),
-		}),
-		pallet_sudo: Some(SudoConfig {
-			key: root_key.clone(),
-		}),
-		pallet_utils: Some(UtilsConfig {
-			treasury_account: treasury_account_id,
-		}),
-		pallet_spaces: Some(SpacesConfig {
-			endowed_account: root_key,
-		}),
+        system: SystemConfig {
+            code: wasm_binary.to_vec(),
+            changes_trie_config: Default::default(),
+        },
+        balances: BalancesConfig {
+            balances: endowed_accounts.iter().cloned().map(|(k, b)| (k, b * DOLLARS)).collect(),
+        },
+		aura: AuraConfig {
+            authorities: initial_authorities.iter().map(|x| (x.0.clone())).collect(),
+        },
+        grandpa: GrandpaConfig {
+            authorities: initial_authorities.iter().map(|x| (x.1.clone(), 1)).collect(),
+        },
+		sudo: SudoConfig {
+            key: root_key.clone(),
+        },
+		utils: UtilsConfig {
+            treasury_account: treasury_account_id,
+        },
+		spaces: SpacesConfig {
+            endowed_account: root_key,
+        },
 	}
 }
 
