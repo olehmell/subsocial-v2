@@ -99,7 +99,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("subsocial"),
 	impl_name: create_runtime_str!("dappforce-subsocial"),
 	authoring_version: 0,
-	spec_version: 16,
+	spec_version: 17,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 3,
@@ -215,8 +215,13 @@ impl frame_system::Config for Runtime {
     type OnSetCode = ();
 }
 
+parameter_types! {
+    pub const MaxAuthorities: u32 = 32;
+}
+
 impl pallet_aura::Config for Runtime {
     type AuthorityId = AuraId;
+    type MaxAuthorities = MaxAuthorities;
     type DisabledValidators = ();
 }
 
@@ -237,6 +242,8 @@ impl pallet_grandpa::Config for Runtime {
     type HandleEquivocation = ();
 
     type WeightInfo = ();
+
+    type MaxAuthorities = MaxAuthorities;
 }
 
 parameter_types! {
@@ -273,11 +280,15 @@ impl pallet_balances::Config for Runtime {
 
 parameter_types! {
 	pub const TransactionByteFee: Balance = 10 * MILLICENTS;
+    /// This value increases the priority of `Operational` transactions by adding
+    /// a "virtual tip" that's equal to the `OperationalFeeMultiplier * final_fee`.
+    pub OperationalFeeMultiplier: u8 = 5;
 }
 
 impl pallet_transaction_payment::Config for Runtime {
     type OnChargeTransaction = CurrencyAdapter<Balances, DealWithFees>;
     type TransactionByteFee = TransactionByteFee;
+    type OperationalFeeMultiplier = OperationalFeeMultiplier;
     type WeightToFee = IdentityFee<Balance>;
     type FeeMultiplierUpdate = ();
 }
@@ -419,8 +430,8 @@ impl pallet_space_history::Config for Runtime {}
 pub struct BaseFilter;
 impl Contains<Call> for BaseFilter {
     fn contains(c: &Call) -> bool {
-        let is_set_balance = matches!(c, Call::Balances(pallet_balances::Call::set_balance(..)));
-        let is_force_transfer = matches!(c, Call::Balances(pallet_balances::Call::force_transfer(..)));
+        let is_set_balance = matches!(c, Call::Balances(pallet_balances::Call::set_balance { .. }));
+        let is_force_transfer = matches!(c, Call::Balances(pallet_balances::Call::force_transfer { .. }));
         match *c {
             Call::Balances(..) => is_set_balance || is_force_transfer,
             _ => true,
@@ -569,7 +580,7 @@ impl_runtime_apis! {
 
 	impl sp_api::Metadata<Block> for Runtime {
 		fn metadata() -> OpaqueMetadata {
-			Runtime::metadata().into()
+			OpaqueMetadata::new(Runtime::metadata().into())
 		}
 	}
 
@@ -616,7 +627,7 @@ impl_runtime_apis! {
 		}
 
 		fn authorities() -> Vec<AuraId> {
-			Aura::authorities()
+			Aura::authorities().into_inner()
 		}
 	}
 
@@ -685,11 +696,11 @@ impl_runtime_apis! {
 
 	#[cfg(feature = "runtime-benchmarks")]
 	impl frame_benchmarking::Benchmark<Block> for Runtime {
-		fn benchmark_metadata(_extra: bool) -> (
+		fn benchmark_metadata(extra: bool) -> (
 			Vec<frame_benchmarking::BenchmarkList>,
 			Vec<frame_support::traits::StorageInfo>,
 		) {
-			/*use frame_benchmarking::{list_benchmark, Benchmarking, BenchmarkList};
+			use frame_benchmarking::{list_benchmark, Benchmarking, BenchmarkList};
 			use frame_support::traits::StorageInfoTrait;
 			use frame_system_benchmarking::Pallet as SystemBench;
 
@@ -698,23 +709,45 @@ impl_runtime_apis! {
 			list_benchmark!(list, extra, frame_system, SystemBench::<Runtime>);
 			list_benchmark!(list, extra, pallet_balances, Balances);
 			list_benchmark!(list, extra, pallet_timestamp, Timestamp);
-            // list_benchmark!(list, extra, pallet_permissions, Permissions);
+
+			list_benchmark!(list, extra, pallet_dotsama_claims, DotsamaClaims);
+			// list_benchmark!(list, extra, pallet_faucets, Faucets);
 			// list_benchmark!(list, extra, pallet_posts, Posts);
 			// list_benchmark!(list, extra, pallet_profile_follows, DotsamaClaims);
 			// list_benchmark!(list, extra, pallet_profiles, Profiles);
 			// list_benchmark!(list, extra, pallet_reactions, Reactions);
 			// list_benchmark!(list, extra, pallet_roles, Roles);
-			// list_benchmark!(list, extra, pallet_scores, Scores);
 			// list_benchmark!(list, extra, pallet_space_follows, SpaceFollows);
 			// list_benchmark!(list, extra, pallet_space_ownership, SpaceOwnership);
 			// list_benchmark!(list, extra, pallet_spaces, Spaces);
-			// list_benchmark!(list, extra, pallet_faucets, Faucets);
-			list_benchmark!(list, extra, pallet_dotsama_claims, DotsamaClaims);
 
-			let storage_info = AllPalletsWithSystem::storage_info();
+			// let storage_info = AllPalletsWithSystem::storage_info();
+            let mut storage_info = DotsamaClaims::storage_info();
+            storage_info.append(&mut Faucets::storage_info());
+            storage_info.append(&mut Utils::storage_info());
+            storage_info.append(&mut Spaces::storage_info());
+            storage_info.append(&mut SpaceOwnership::storage_info());
+            storage_info.append(&mut SpaceHistory::storage_info());
+            storage_info.append(&mut SpaceFollows::storage_info());
+            storage_info.append(&mut Roles::storage_info());
+            storage_info.append(&mut Reactions::storage_info());
+            storage_info.append(&mut ProfileHistory::storage_info());
+            storage_info.append(&mut Profiles::storage_info());
+            storage_info.append(&mut ProfileFollows::storage_info());
+            storage_info.append(&mut PostHistory::storage_info());
+            storage_info.append(&mut Posts::storage_info());
+            storage_info.append(&mut Utility::storage_info());
+            storage_info.append(&mut Scheduler::storage_info());
+            storage_info.append(&mut Sudo::storage_info());
+            storage_info.append(&mut TransactionPayment::storage_info());
+            storage_info.append(&mut Balances::storage_info());
+            storage_info.append(&mut Grandpa::storage_info());
+            storage_info.append(&mut Aura::storage_info());
+            storage_info.append(&mut Timestamp::storage_info());
+            storage_info.append(&mut RandomnessCollectiveFlip::storage_info());
+            storage_info.append(&mut System::storage_info());
 
-			return (list, storage_info)*/
-            todo!()
+			return (list, storage_info)
 		}
 
 		fn dispatch_benchmark(
