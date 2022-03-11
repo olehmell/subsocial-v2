@@ -1,0 +1,94 @@
+name: Build and deploy node
+on:
+  pull_request:
+    types:
+      - closed
+    branches:
+      - master
+
+jobs:
+  build:
+    if: contains( github.event.pull_request.labels.*.name, 'CI')
+    name: Create & push Docker image
+    runs-on: [ self-hosted, linux, x64, standalone ]
+
+    steps:
+
+      - uses: actions/checkout@v2
+      - name: Prepare
+        id: prep
+        run: |
+          TAG=$(echo $GITHUB_SHA | head -c7)
+          IMAGE="dappforce/subsocial-node"
+          echo ::set-output name=tagged_image::${IMAGE}:${TAG}
+          echo ::set-output name=tag::${TAG}
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@master
+
+      - name: Login to DockerHub
+        uses: docker/login-action@master
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Cache Docker layers
+        uses: actions/cache@v2
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-single-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-single-buildx
+
+      - name: Build production image
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          builder: ${{ steps.buildx.outputs.name }}
+          file: docker/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.prep.outputs.tagged_image }}
+            dappforce/subsocial-node:latest
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new
+
+      - name: Move cache
+        run: |
+          rm -rf /tmp/.buildx-cache
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+
+
+  deploy_1:
+    name: deploy-validator-1
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: executing remote ssh commands
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.KEY }}
+          port: ${{ secrets.PORT }}
+          script: |
+            cd /home/ops/
+            ./validator.sh
+
+
+  deploy_2:
+    name: deploy-validator-2
+    needs: deploy_1
+    runs-on: ubuntu-latest
+    steps:
+      - name: executing remote ssh commands
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST_2 }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.KEY }}
+          port: ${{ secrets.PORT }}
+          script: |
+            cd /home/ops/
+            ./validator.sh
